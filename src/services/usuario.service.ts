@@ -168,7 +168,14 @@ export async function atualizarUsuario(
   return prisma.$transaction(async (tx) => {
     const atualizado = await tx.usuario.update({
       where: { id },
-      data: { nome: dados.nome, email: dados.email, perfil: dados.perfil, ativo: dados.ativo, senhaHash },
+      data: {
+        nome: dados.nome,
+        email: dados.email,
+        perfil: dados.perfil,
+        ativo: dados.ativo,
+        // Redefinição pelo ADMIN também derruba as sessões existentes do usuário.
+        ...(senhaHash && { senhaHash, senhaAlteradaEm: new Date() }),
+      },
       select: usuarioPublicoSelect,
     });
 

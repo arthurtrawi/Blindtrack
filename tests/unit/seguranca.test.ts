@@ -50,7 +50,11 @@ describe('JWT', () => {
 
   it('gera token verificável com sub e perfil', () => {
     const { token, expiraEm } = gerarToken(usuario);
-    expect(verificarToken(token)).toEqual({ sub: usuario.id, perfil: 'GESTOR' });
+    expect(verificarToken(token)).toEqual({
+      sub: usuario.id,
+      perfil: 'GESTOR',
+      emitidoEm: expect.any(Number),
+    });
     expect(expiraEm.getTime()).toBeGreaterThan(Date.now());
   });
 
@@ -76,5 +80,28 @@ describe('JWT', () => {
       expiresIn: -10,
     });
     expect(() => verificarToken(expirado)).toThrow('Token expirado');
+  });
+});
+
+describe('máscara de dados pessoais nos logs HTTP (LGPD)', () => {
+  it('mascara parâmetros sensíveis da URL e preserva os demais', async () => {
+    const { mascararUrl } = await import('../../src/middlewares/request-logger.js');
+
+    expect(mascararUrl('/api/v1/clientes?documento=529.982.247-25&page=2&email=a%40b.com')).toBe(
+      '/api/v1/clientes?documento=[REDACTED]&page=2&email=[REDACTED]',
+    );
+    expect(mascararUrl('/api/v1/veiculos?placa=ABC1234&placa=XYZ9876')).toBe(
+      '/api/v1/veiculos?placa=[REDACTED]',
+    );
+    expect(mascararUrl('/api/v1/ordens-servico?status=ABERTA')).toBe('/api/v1/ordens-servico?status=ABERTA');
+    expect(mascararUrl('/api/v1/health')).toBe('/api/v1/health');
+  });
+
+  it('mascara o objeto de query', async () => {
+    const { mascararQuery } = await import('../../src/middlewares/request-logger.js');
+    expect(mascararQuery({ nome: 'Maria', status: 'ABERTA' })).toEqual({
+      nome: '[REDACTED]',
+      status: 'ABERTA',
+    });
   });
 });

@@ -194,18 +194,20 @@ model Veiculo {
 
 /// Usuário interno ou de portal. Nunca é excluído, apenas desativado (ativo = false).
 model Usuario {
-  id            String        @id @default(uuid(7)) @db.Uuid
-  nome          String        @db.VarChar(150)
+  id              String        @id @default(uuid(7)) @db.Uuid
+  nome            String        @db.VarChar(150)
   /// Armazenado sempre em minúsculas (normalizado pelo service): unicidade sem diferenciar caixa.
-  email         String        @unique @db.VarChar(254)
-  senhaHash     String        @map("senha_hash") @db.VarChar(100)
-  perfil        PerfilUsuario
-  ativo         Boolean       @default(true)
+  email           String        @unique @db.VarChar(254)
+  senhaHash       String        @map("senha_hash") @db.VarChar(100)
+  perfil          PerfilUsuario
+  ativo           Boolean       @default(true)
   /// Obrigatório se e somente se perfil = CLIENTE (CHECK no banco). 1:1 com Cliente.
-  clienteId     String?       @unique @map("cliente_id") @db.Uuid
-  ultimoLoginEm DateTime?     @map("ultimo_login_em") @db.Timestamptz(3)
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  clienteId       String?       @unique @map("cliente_id") @db.Uuid
+  ultimoLoginEm   DateTime?     @map("ultimo_login_em") @db.Timestamptz(3)
+  /// Tokens emitidos antes desta data são recusados (troca/redefinição de senha).
+  senhaAlteradaEm DateTime?     @map("senha_alterada_em") @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: Restrict)
 

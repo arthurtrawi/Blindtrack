@@ -26,6 +26,8 @@ const usuarioAutenticadoSelect = {
 export interface PayloadToken {
   sub: string;
   perfil: UsuarioAutenticado['perfil'];
+  /** Instante de emissão (segundos Unix, claim "iat"). */
+  emitidoEm: number;
 }
 
 export interface ResultadoLogin {
@@ -49,7 +51,7 @@ export function gerarToken(usuario: Pick<UsuarioAutenticado, 'id' | 'perfil'>): 
   token: string;
   expiraEm: Date;
 } {
-  const payload: Omit<PayloadToken, 'sub'> = { perfil: usuario.perfil };
+  const payload: Pick<PayloadToken, 'perfil'> = { perfil: usuario.perfil };
   const token = jwt.sign(payload, env.JWT_SECRET, {
     subject: usuario.id,
     expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'],
@@ -69,10 +71,18 @@ export function verificarToken(token: string): PayloadToken {
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
     });
-    if (typeof decodificado === 'string' || typeof decodificado.sub !== 'string') {
+    if (
+      typeof decodificado === 'string' ||
+      typeof decodificado.sub !== 'string' ||
+      typeof decodificado.iat !== 'number'
+    ) {
       throw new UnauthorizedError('Token inválido');
     }
-    return { sub: decodificado.sub, perfil: decodificado['perfil'] as PayloadToken['perfil'] };
+    return {
+      sub: decodificado.sub,
+      perfil: decodificado['perfil'] as PayloadToken['perfil'],
+      emitidoEm: decodificado.iat,
+    };
   } catch (erro) {
     if (erro instanceof jwt.TokenExpiredError) {
       throw new UnauthorizedError('Token expirado');
@@ -82,12 +92,28 @@ export function verificarToken(token: string): PayloadToken {
   }
 }
 
-/** Carrega o usuário do token. Retorna null se não existir ou estiver inativo. */
-export async function carregarUsuarioAutenticado(id: string): Promise<UsuarioAutenticado | null> {
-  return prisma.usuario.findFirst({
+/**
+ * Carrega o usuário do token. Retorna null se não existir ou estiver inativo.
+ * Recusa tokens emitidos ANTES da última troca/redefinição de senha: um token roubado
+ * deixa de valer assim que a senha muda (não espera as 8 h de expiração).
+ */
+export async function carregarUsuarioAutenticado(
+  id: string,
+  emitidoEmSegundos: number,
+): Promise<UsuarioAutenticado | null> {
+  const usuario = await prisma.usuario.findFirst({
     where: { id, ativo: true },
-    select: usuarioAutenticadoSelect,
+    select: { ...usuarioAutenticadoSelect, senhaAlteradaEm: true },
   });
+  if (!usuario) return null;
+
+  const { senhaAlteradaEm, ...autenticado } = usuario;
+  // "iat" tem precisão de segundos: compara no mesmo grão para não recusar o token
+  // emitido no login feito logo após a troca de senha.
+  if (senhaAlteradaEm && emitidoEmSegundos < Math.floor(senhaAlteradaEm.getTime() / 1000)) {
+    throw new UnauthorizedError('Sessão encerrada porque a senha foi alterada. Faça login novamente.');
+  }
+  return autenticado;
 }
 
 export async function login({ email, senha }: LoginInput): Promise<ResultadoLogin> {
@@ -123,7 +149,10 @@ export async function alterarPropriaSenha(ctx: ContextoRequisicao, dados: Altera
 
   const novoHash = await bcrypt.hash(dados.novaSenha, env.BCRYPT_SALT_ROUNDS);
   await prisma.$transaction(async (tx) => {
-    await tx.usuario.update({ where: { id: ctx.usuario.id }, data: { senhaHash: novoHash } });
+    await tx.usuario.update({
+      where: { id: ctx.usuario.id },
+      data: { senhaHash: novoHash, senhaAlteradaEm: new Date() },
+    });
     await registrarAuditoria(tx, ctx, {
       entidade: 'Usuario',
       entidadeId: ctx.usuario.id,

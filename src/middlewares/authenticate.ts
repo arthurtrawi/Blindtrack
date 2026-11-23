@@ -16,7 +16,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
   }
 
   const payload = verificarToken(cabecalho.slice('Bearer '.length).trim());
-  const usuario = await carregarUsuarioAutenticado(payload.sub);
+  const usuario = await carregarUsuarioAutenticado(payload.sub, payload.emitidoEm);
   if (!usuario) {
     throw new UnauthorizedError('Usuário inexistente ou inativo');
   }

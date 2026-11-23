@@ -59,6 +59,7 @@ erDiagram
         perfil_usuario perfil
         boolean ativo
         uuid cliente_id FK,UK "só perfil CLIENTE"
+        timestamptz senha_alterada_em "revoga tokens anteriores"
     }
     modelos_etapa {
         uuid id PK

@@ -7,7 +7,7 @@ histórico imutável, além de um portal de consulta para o cliente.
 > O sistema é **administrativo e de rastreabilidade**. Ele não toma decisões técnicas de
 > engenharia, certificação, inspeção ou conformidade legal: só registra as decisões humanas.
 
-**Status:** Fase 4 concluída: toda a API de negócio (autenticação, cadastros, OS, etapas, histórico, ocorrências, documentos e portal do cliente). A Fase 5 (Swagger completo, revisão de segurança e logs) é a próxima.
+**Status:** Fase 5 concluída: API completa, documentada no Swagger, com revisão de segurança e 206 testes automatizados (94% de cobertura de linhas). A Fase 6 (documentação final) é a próxima.
 
 ## Tecnologias
 
@@ -188,13 +188,14 @@ Use `down` no dia a dia. Use `down -v` só quando quiser zerar o banco de propó
 | `npm run lint` / `npm run format`                | ESLint / Prettier                                                      |
 | `npm test`                                       | Todos os testes (Vitest)                                               |
 | `npm run test:unit` / `npm run test:integration` | Só unitários / só integração                                           |
-| `npm run test:coverage`                          | Testes com relatório de cobertura                                      |
+| `npm run test:coverage`                          | Testes com relatório de cobertura (HTML em `coverage/index.html`)      |
 | `npm run db:up` / `db:down` / `db:logs`          | Atalhos para o Docker Compose                                          |
 | `npm run db:generate`                            | Gera o Prisma Client em `src/generated/prisma`                         |
 | `npm run db:migrate`                             | Cria e aplica migrations em desenvolvimento                            |
 | `npm run db:deploy`                              | Aplica migrations existentes (produção/CI)                             |
 | `npm run db:seed`                                | Popula dados iniciais                                                  |
 | `npm run db:studio`                              | Abre o Prisma Studio                                                   |
+| `npm run docs:openapi`                           | Exporta a especificação OpenAPI para `docs/api/openapi.json`           |
 | `npm run db:reset`                               | **Apaga** o banco de desenvolvimento e reaplica as migrations e o seed |
 
 ## Testes
@@ -211,4 +212,9 @@ O `.env` **nunca** deve ser versionado.
 
 ## Estrutura
 
-Veja [arquitetura.md](arquitetura.md) e a pasta [docs/](docs/).
+Veja [arquitetura.md](arquitetura.md) e a pasta [docs/](docs/). Qualidade: [plano de testes](docs/qualidade/plano-de-testes.md) e [revisão de segurança](docs/qualidade/revisao-seguranca.md).
+
+## Documentação da API
+
+- **Swagger UI:** <http://localhost:3000/api/v1/docs>. Faça login em `POST /auth/login` e use **Authorize** com o token.
+- **Especificação:** [`docs/api/openapi.json`](docs/api/openapi.json), gerada dos mesmos schemas Zod que validam as requisições (`npm run docs:openapi`). Importável no Postman/Insomnia.
