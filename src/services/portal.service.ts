@@ -13,6 +13,7 @@ import type { StatusEtapa, StatusOcorrencia, StatusOrdemServico } from '../gener
 import type { ContextoRequisicao } from '../types/auth.js';
 import { ForbiddenError, NotFoundError } from '../utils/app-error.js';
 import { paraSkipTake, respostaPaginada, type ParametrosPaginacao } from '../utils/paginacao.js';
+import { etapaAtualDe } from './domain/constantes.js';
 import { prazoOrdem } from './domain/prazos.js';
 import { ROTULO_STATUS_OS } from './ordem-servico.service.js';
 
@@ -40,11 +41,7 @@ function clienteIdDo(ctx: ContextoRequisicao): string {
 }
 
 function etapaAtual(etapas: { nome: string; status: StatusEtapa }[]): string | null {
-  return (
-    etapas.find((e) => e.status === 'EM_ANDAMENTO' || e.status === 'PAUSADA')?.nome ??
-    etapas.find((e) => e.status === 'PENDENTE')?.nome ??
-    null
-  );
+  return etapaAtualDe(etapas)?.nome ?? null;
 }
 
 /** Previsão e situação de prazo, sem expor dias de atraso internos além do necessário. */
@@ -138,6 +135,8 @@ export async function acompanharOrdem(id: string, ctx: ContextoRequisicao) {
         orderBy: { ordem: 'asc' },
         select: {
           nome: true,
+          // Texto institucional da etapa (P5): vem do modelo de etapas, não é dado interno da OS.
+          descricao: true,
           ordem: true,
           status: true,
           dataInicio: true,

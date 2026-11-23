@@ -191,3 +191,23 @@ export async function atualizarUsuario(
     return atualizado;
   });
 }
+
+export interface ResponsavelDisponivel {
+  id: string;
+  nome: string;
+  perfil: 'TECNICO' | 'GESTOR';
+}
+
+/**
+ * Usuários que podem ser responsáveis por etapas (TECNICO e GESTOR ativos), com dados
+ * mínimos: sem e-mail nem datas. Existe para o GESTOR atribuir responsáveis sem precisar
+ * do cadastro completo de usuários, que é exclusivo do ADMIN (P7).
+ */
+export async function listarResponsaveis(): Promise<ResponsavelDisponivel[]> {
+  const usuarios = await prisma.usuario.findMany({
+    where: { ativo: true, perfil: { in: ['TECNICO', 'GESTOR'] } },
+    select: { id: true, nome: true, perfil: true },
+    orderBy: [{ perfil: 'desc' }, { nome: 'asc' }],
+  });
+  return usuarios as ResponsavelDisponivel[];
+}

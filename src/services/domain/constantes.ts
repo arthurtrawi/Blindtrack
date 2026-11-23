@@ -44,3 +44,15 @@ export function osEncerrada(status: StatusOrdemServico): boolean {
 export function etapaFinalizada(status: StatusEtapa): boolean {
   return (STATUS_ETAPA_FINALIZADOS as readonly StatusEtapa[]).includes(status);
 }
+
+/**
+ * Etapa "atual" de uma OS: a que está em andamento ou pausada; se nenhuma, a primeira
+ * pendente; se todas finalizadas, nenhuma. Usada no portal e na listagem de OS (P2).
+ */
+export function etapaAtualDe<T extends { status: StatusEtapa }>(etapasEmOrdem: readonly T[]): T | null {
+  return (
+    etapasEmOrdem.find((e) => e.status === 'EM_ANDAMENTO' || e.status === 'PAUSADA') ??
+    etapasEmOrdem.find((e) => e.status === 'PENDENTE') ??
+    null
+  );
+}

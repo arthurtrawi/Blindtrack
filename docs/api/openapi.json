@@ -51,6 +51,9 @@
       "name": "Modelo de etapas"
     },
     {
+      "name": "Dashboard"
+    },
+    {
       "name": "Portal do cliente"
     }
   ],
@@ -151,7 +154,7 @@
       "post": {
         "tags": ["Autenticação"],
         "summary": "Login com e-mail e senha",
-        "description": "Retorna um JWT (Bearer) válido por 8 h. Tentativas falhas são limitadas por IP (429).\n\n**Perfis:** Público",
+        "description": "Define o cookie de sessão HttpOnly `bt_sessao` (8 h) e devolve o JWT no corpo para uso como Bearer. Com o cabeçalho `X-Requested-With: BlindTrack` (front-end), o token NÃO vem no corpo, só no cookie. Escritas autenticadas por cookie exigem esse cabeçalho (anti-CSRF). Tentativas falhas são limitadas por IP (429).\n\n**Perfis:** Público",
         "operationId": "postAuthLogin",
         "security": [],
         "requestBody": {
@@ -216,6 +219,20 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Autenticação"],
+        "summary": "Encerrar a sessão do navegador",
+        "description": "Apaga o cookie de sessão. Idempotente: funciona mesmo com sessão expirada.\n\n**Perfis:** Público",
+        "operationId": "postAuthLogout",
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "Cookie removido"
           }
         }
       }
@@ -525,6 +542,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Perfil sem permissão",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuarios/responsaveis": {
+      "get": {
+        "tags": ["Usuários"],
+        "summary": "Responsáveis disponíveis para etapas",
+        "description": "TECNICO e GESTOR ativos, só com id, nome e perfil. Usado para atribuir responsáveis.\n\n**Perfis:** ADMIN, GESTOR",
+        "operationId": "getUsuariosResponsaveis",
+        "responses": {
+          "200": {
+            "description": "Usuários que podem ser responsáveis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1987,6 +2052,16 @@
             }
           },
           {
+            "name": "cliente",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 150
+            }
+          },
+          {
             "name": "atrasada",
             "in": "query",
             "required": false,
@@ -2013,6 +2088,26 @@
               "type": "string",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "ordenarPor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "dataEntrada",
+              "type": "string",
+              "enum": ["numero", "dataEntrada", "previsaoEntrega"]
+            }
+          },
+          {
+            "name": "direcao",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": ["asc", "desc"]
             }
           }
         ],
@@ -4141,6 +4236,51 @@
           },
           "422": {
             "description": "Regra de negócio violada (o código da regra vem em error.code)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/indicadores": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Indicadores da operação",
+        "description": "OS por status, ativas, atrasadas, entregas nos próximos 7 dias, ocorrências ativas, etapas em curso e etapas atrasadas.\n\n**Perfis:** ADMIN, GESTOR, TECNICO, ATENDIMENTO",
+        "operationId": "getDashboardIndicadores",
+        "responses": {
+          "200": {
+            "description": "Indicadores agregados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Perfil sem permissão",
             "content": {
               "application/json": {
                 "schema": {

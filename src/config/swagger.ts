@@ -97,10 +97,22 @@ export const OPERACOES: Operacao[] = [
     perfis: 'PUBLICO',
     corpo: loginSchema,
     resumo: 'Login com e-mail e senha',
-    descricao: 'Retorna um JWT (Bearer) válido por 8 h. Tentativas falhas são limitadas por IP (429).',
+    descricao:
+      'Define o cookie de sessão HttpOnly `bt_sessao` (8 h) e devolve o JWT no corpo para uso como Bearer. ' +
+      'Com o cabeçalho `X-Requested-With: BlindTrack` (front-end), o token NÃO vem no corpo, só no cookie. ' +
+      'Escritas autenticadas por cookie exigem esse cabeçalho (anti-CSRF). Tentativas falhas são limitadas por IP (429).',
     exemplo: { email: 'gestor@blindtrack.example', senha: 'sua-senha' },
     sucesso: { status: 200, retorno: 'objeto', descricao: 'Token e dados do usuário' },
     erros: [429],
+  },
+  {
+    metodo: 'post',
+    caminho: '/auth/logout',
+    tag: 'Autenticação',
+    perfis: 'PUBLICO',
+    resumo: 'Encerrar a sessão do navegador',
+    descricao: 'Apaga o cookie de sessão. Idempotente: funciona mesmo com sessão expirada.',
+    sucesso: { status: 204, retorno: 'vazio', descricao: 'Cookie removido' },
   },
   {
     metodo: 'get',
@@ -147,6 +159,15 @@ export const OPERACOES: Operacao[] = [
     query: listarUsuariosSchema,
     resumo: 'Listar usuários',
     sucesso: { status: 200, retorno: 'paginado', descricao: 'Página de usuários' },
+  },
+  {
+    metodo: 'get',
+    caminho: '/usuarios/responsaveis',
+    tag: 'Usuários',
+    perfis: GESTAO,
+    resumo: 'Responsáveis disponíveis para etapas',
+    descricao: 'TECNICO e GESTOR ativos, só com id, nome e perfil. Usado para atribuir responsáveis.',
+    sucesso: { status: 200, retorno: 'lista', descricao: 'Usuários que podem ser responsáveis' },
   },
   {
     metodo: 'get',
@@ -522,6 +543,17 @@ export const OPERACOES: Operacao[] = [
     exemplo: { nome: 'Polimento técnico' },
     sucesso: { status: 200, retorno: 'objeto', descricao: 'Modelo atualizado' },
     erros: [409, 422],
+  },
+  // Dashboard
+  {
+    metodo: 'get',
+    caminho: '/dashboard/indicadores',
+    tag: 'Dashboard',
+    perfis: INTERNOS,
+    resumo: 'Indicadores da operação',
+    descricao:
+      'OS por status, ativas, atrasadas, entregas nos próximos 7 dias, ocorrências ativas, etapas em curso e etapas atrasadas.',
+    sucesso: { status: 200, retorno: 'objeto', descricao: 'Indicadores agregados' },
   },
   // Portal do cliente
   {

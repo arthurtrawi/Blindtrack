@@ -18,6 +18,7 @@ import type {
 import { registrarAuditoria } from './auditoria.service.js';
 import {
   CODIGO_ETAPA_ENTREGA,
+  etapaAtualDe,
   osEncerrada,
   STATUS_OCORRENCIA_ABERTOS,
   STATUS_OS_ENCERRADOS,
@@ -217,7 +218,7 @@ export async function abrirOrdem(dados: AbrirOrdemInput, ctx: ContextoRequisicao
 }
 
 /** RN27b: atrasada = não encerrada com previsão vencida, ou entregue depois da previsão. */
-function filtroAtrasadas(agora: Date): Prisma.OrdemServicoWhereInput {
+export function filtroOrdensAtrasadas(agora: Date): Prisma.OrdemServicoWhereInput {
   return {
     OR: [
       { status: { notIn: [...STATUS_OS_ENCERRADOS] }, previsaoEntrega: { lt: agora } },
@@ -229,6 +230,11 @@ function filtroAtrasadas(agora: Date): Prisma.OrdemServicoWhereInput {
 const ordemListagemInclude = {
   cliente: { select: { id: true, nome: true } },
   veiculo: { select: { id: true, placa: true, marca: true, modelo: true } },
+  // Para calcular a etapa atual e seu responsável na listagem (P2). Uma OS tem ~8 etapas.
+  etapas: {
+    orderBy: { ordem: 'asc' },
+    select: { nome: true, status: true, responsavel: { select: { id: true, nome: true } } },
+  },
   _count: { select: { ocorrencias: { where: { status: { in: [...STATUS_OCORRENCIA_ABERTOS] } } } } },
 } as const satisfies Prisma.OrdemServicoInclude;
 
@@ -240,14 +246,15 @@ export async function listarOrdens(query: ListarOrdensQuery) {
     ...(query.veiculoId && { veiculoId: query.veiculoId }),
     ...(query.placa && { veiculo: { placa: { startsWith: query.placa } } }),
     ...(query.numero && { numero: { contains: query.numero } }),
+    ...(query.cliente && { cliente: { nome: { contains: query.cliente, mode: 'insensitive' } } }),
     ...((query.entradaDe || query.entradaAte) && {
       dataEntrada: {
         ...(query.entradaDe && { gte: query.entradaDe }),
         ...(query.entradaAte && { lte: query.entradaAte }),
       },
     }),
-    ...(query.atrasada === true && filtroAtrasadas(agora)),
-    ...(query.atrasada === false && { NOT: filtroAtrasadas(agora) }),
+    ...(query.atrasada === true && filtroOrdensAtrasadas(agora)),
+    ...(query.atrasada === false && { NOT: filtroOrdensAtrasadas(agora) }),
   };
 
   const [total, ordens] = await prisma.$transaction([
@@ -255,16 +262,21 @@ export async function listarOrdens(query: ListarOrdensQuery) {
     prisma.ordemServico.findMany({
       where,
       include: ordemListagemInclude,
-      orderBy: { dataEntrada: 'desc' },
+      // Desempate por id garante paginação estável quando o campo ordenado se repete.
+      orderBy: [{ [query.ordenarPor]: query.direcao }, { id: query.direcao }],
       ...paraSkipTake(query),
     }),
   ]);
 
-  const data = ordens.map(({ _count, ...ordem }) => ({
-    ...ordem,
-    ocorrenciasAbertas: _count.ocorrencias,
-    prazo: prazoOrdem(ordem, agora),
-  }));
+  const data = ordens.map(({ _count, etapas, ...ordem }) => {
+    const atual = etapaAtualDe(etapas);
+    return {
+      ...ordem,
+      etapaAtual: atual ? { nome: atual.nome, status: atual.status, responsavel: atual.responsavel } : null,
+      ocorrenciasAbertas: _count.ocorrencias,
+      prazo: prazoOrdem(ordem, agora),
+    };
+  });
   return respostaPaginada(data, total, query);
 }
 

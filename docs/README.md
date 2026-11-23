@@ -30,7 +30,7 @@ Todos os diagramas usam **Mermaid** e são renderizados pelo GitHub, pelo GitLab
 
 | Documento                            | Conteúdo                                                                    |
 | ------------------------------------ | --------------------------------------------------------------------------- |
-| [api/openapi.json](api/openapi.json) | Especificação OpenAPI 3.0 (42 operações), gerada com `npm run docs:openapi` |
+| [api/openapi.json](api/openapi.json) | Especificação OpenAPI 3.0 (45 operações), gerada com `npm run docs:openapi` |
 | Swagger UI                           | `http://localhost:3000/api/v1/docs`, com a API em execução                  |
 
 ## Qualidade

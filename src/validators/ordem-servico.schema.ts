@@ -45,11 +45,18 @@ export const listarOrdensSchema = paginacaoSchema
     veiculoId: z.uuid('veiculoId inválido').optional(),
     placa: z.string().transform(normalizarPlaca).optional(),
     numero: z.string().trim().toUpperCase().max(20).optional(),
+    /** Busca parcial pelo nome do cliente, sem diferenciar maiúsculas (P2). */
+    cliente: z.string().trim().min(2).max(150).optional(),
     /** Somente OS atrasadas (RN27b). */
     atrasada: booleanoQuerySchema.optional(),
     /** Período de entrada (inclusive). */
     entradaDe: dataHoraSchema.optional(),
     entradaAte: dataHoraSchema.optional(),
+    /** Ordenação (P2). Padrão: entrada mais recente primeiro. */
+    ordenarPor: z
+      .enum(['numero', 'dataEntrada', 'previsaoEntrega'], 'ordenarPor inválido')
+      .default('dataEntrada'),
+    direcao: z.enum(['asc', 'desc'], 'direcao deve ser asc ou desc').default('desc'),
   })
   .refine((q) => !q.entradaDe || !q.entradaAte || q.entradaDe <= q.entradaAte, {
     message: 'entradaDe deve ser anterior a entradaAte',

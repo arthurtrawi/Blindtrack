@@ -26,3 +26,8 @@ export async function atualizar(
   const usuario = await usuarioService.atualizarUsuario(req.params.id, req.body, contextoDe(req));
   res.status(200).json({ data: usuario });
 }
+
+/** GET /usuarios/responsaveis (ADMIN, GESTOR) */
+export async function listarResponsaveis(_req: Request, res: Response): Promise<void> {
+  res.status(200).json({ data: await usuarioService.listarResponsaveis() });
+}

@@ -36,38 +36,40 @@ npm run test:coverage         # com cobertura (relatório HTML em coverage/index
 
 Sem o PostgreSQL disponível, os testes que dependem do banco são **marcados como ignorados**, e não como aprovados.
 
-## 4. Resultados (execução de 2026-11-23)
+## 4. Resultados (execução de 2026-11-23, após a Fase 4c)
 
 | Métrica                                     | Resultado                                | Meta (RNF18) |
 | ------------------------------------------- | ---------------------------------------- | ------------ |
-| Testes                                      | **206 aprovados**, 1 ignorado¹, 0 falhas | —            |
-| Arquivos de teste                           | 16 (6 unitários, 10 de integração)       | —            |
-| Cobertura de linhas (total)                 | **94,07%**                               | —            |
-| Cobertura de ramos (total)                  | **80,23%**                               | —            |
-| Cobertura de linhas — `src/services`        | **91,05%**                               | ≥ 70% ✅     |
+| Testes                                      | **228 aprovados**, 1 ignorado¹, 0 falhas | —            |
+| Arquivos de teste                           | 18 (6 unitários, 12 de integração)       | —            |
+| Cobertura de linhas (total)                 | **94,28%**                               | —            |
+| Cobertura de ramos (total)                  | **80,39%**                               | —            |
+| Cobertura de linhas — `src/services`        | **92,56%**                               | ≥ 70% ✅     |
 | Cobertura de linhas — `src/services/domain` | **98,00%**                               | —            |
 | Tempo da suíte                              | ~40–50 s (VM com 3 vCPUs)                | —            |
 
 ¹ "GET /health retorna 503 com banco indisponível" só roda quando o banco está fora do ar.
 
-| Arquivo                           | Testes | Foco                                                                                               |
-| --------------------------------- | -----: | -------------------------------------------------------------------------------------------------- |
-| `unit/dominio.test.ts`            |     20 | Máquinas de estado (etapa, OS, ocorrência), RN17, prazos                                           |
-| `unit/documento.test.ts`          |     17 | CPF, CNPJ numérico e alfanumérico, máscara                                                         |
-| `unit/validators.test.ts`         |     15 | Normalização e rejeição de entradas, mass assignment                                               |
-| `unit/seguranca.test.ts`          |      8 | Rate limit, sanitização da auditoria, JWT (`alg: none`, segredo errado, expirado), máscara de logs |
-| `unit/error-handler.test.ts`      |      7 | Tradução de erros; 500 sem vazar detalhes                                                          |
-| `unit/app-error.test.ts`          |      3 | Hierarquia de erros                                                                                |
-| `integration/openapi.test.ts`     |     44 | Documentação × rotas reais × perfis                                                                |
-| `integration/fluxo-ordem.test.ts` |     16 | Ciclo de vida completo de uma OS                                                                   |
-| `integration/operacao.test.ts`    |     16 | Prazos, suspensão, ocorrências, upload, modelo de etapas                                           |
-| `integration/usuarios.test.ts`    |     12 | Gestão de usuários                                                                                 |
-| `integration/banco.test.ts`       |     10 | Restrições do PostgreSQL                                                                           |
-| `integration/clientes.test.ts`    |     10 | Clientes e LGPD                                                                                    |
-| `integration/auth.test.ts`        |      9 | Login, `/me`, troca de senha, revogação de sessão                                                  |
-| `integration/app.test.ts`         |      8 | Infraestrutura HTTP (404, Helmet, CORS, Swagger, health)                                           |
-| `integration/portal.test.ts`      |      6 | Isolamento e lista branca do portal                                                                |
-| `integration/veiculos.test.ts`    |      6 | Veículos, transferência de proprietário                                                            |
+| Arquivo                               | Testes | Foco                                                                                               |
+| ------------------------------------- | -----: | -------------------------------------------------------------------------------------------------- |
+| `unit/dominio.test.ts`                |     20 | Máquinas de estado (etapa, OS, ocorrência), RN17, prazos                                           |
+| `unit/documento.test.ts`              |     17 | CPF, CNPJ numérico e alfanumérico, máscara                                                         |
+| `unit/validators.test.ts`             |     15 | Normalização e rejeição de entradas, mass assignment                                               |
+| `unit/seguranca.test.ts`              |      8 | Rate limit, sanitização da auditoria, JWT (`alg: none`, segredo errado, expirado), máscara de logs |
+| `unit/error-handler.test.ts`          |      7 | Tradução de erros; 500 sem vazar detalhes                                                          |
+| `unit/app-error.test.ts`              |      3 | Hierarquia de erros                                                                                |
+| `integration/openapi.test.ts`         |     47 | Documentação × rotas reais × perfis (45 operações + 2)                                             |
+| `integration/fluxo-ordem.test.ts`     |     16 | Ciclo de vida completo de uma OS                                                                   |
+| `integration/operacao.test.ts`        |     16 | Prazos, suspensão, ocorrências, upload, modelo de etapas                                           |
+| `integration/usuarios.test.ts`        |     12 | Gestão de usuários                                                                                 |
+| `integration/banco.test.ts`           |     10 | Restrições do PostgreSQL                                                                           |
+| `integration/clientes.test.ts`        |     10 | Clientes e LGPD                                                                                    |
+| `integration/auth.test.ts`            |      9 | Login, `/me`, troca de senha, revogação de sessão                                                  |
+| `integration/app.test.ts`             |      8 | Infraestrutura HTTP (404, Helmet, CORS, Swagger, health)                                           |
+| `integration/portal.test.ts`          |      6 | Isolamento e lista branca do portal                                                                |
+| `integration/veiculos.test.ts`        |      6 | Veículos, transferência de proprietário                                                            |
+| `integration/apoio-front-end.test.ts` |     10 | Fase 4c: indicadores (P1), listagem enriquecida (P2), descrição no portal (P5), responsáveis (P7)  |
+| `integration/sessao-cookie.test.ts`   |      9 | Fase 4c: cookie HttpOnly, token fora do corpo, CSRF, logout, CORS com credenciais                  |
 
 ## 5. Rastreabilidade: regra de negócio → teste
 

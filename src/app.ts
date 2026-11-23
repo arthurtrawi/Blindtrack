@@ -25,9 +25,11 @@ const corsOptions: CorsOptions = {
     }
     callback(null, false);
   },
-  credentials: false,
+  // Necessário para o navegador enviar o cookie de sessão HttpOnly (ADR-26).
+  // Seguro porque a origem é validada contra a lista CORS_ORIGINS acima.
+  credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Requested-With'],
   exposedHeaders: ['X-Request-Id'],
   maxAge: 600,
 };

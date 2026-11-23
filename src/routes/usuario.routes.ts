@@ -12,8 +12,13 @@ import {
 
 export const usuarioRoutes: Router = Router();
 
-// Todo o módulo é exclusivo do ADMIN (matriz de permissões, arquitetura.md §7).
-usuarioRoutes.use(authenticate, authorize('ADMIN'));
+usuarioRoutes.use(authenticate);
+
+// Lista mínima para atribuição de responsáveis (P7). Registrada antes de '/:id'.
+usuarioRoutes.get('/responsaveis', authorize('ADMIN', 'GESTOR'), usuarioController.listarResponsaveis);
+
+// O cadastro de usuários é exclusivo do ADMIN (matriz de permissões, arquitetura.md §7).
+usuarioRoutes.use(authorize('ADMIN'));
 
 usuarioRoutes.post('/', validate({ body: criarUsuarioSchema }), usuarioController.criar);
 usuarioRoutes.get('/', validate({ query: listarUsuariosSchema }), usuarioController.listar);

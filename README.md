@@ -203,7 +203,7 @@ Use `down` no dia a dia. Use `down -v` só quando quiser zerar o banco de propó
 ## Testes
 
 ```bash
-npm test                       # 206 testes; os de integração precisam do PostgreSQL no ar
+npm test                       # 228 testes; os de integração precisam do PostgreSQL no ar
 ```
 
 - Com `NODE_ENV=test`, a API usa `TEST_DATABASE_URL` (banco `blindtrack_test`): os testes
@@ -216,34 +216,38 @@ Resultados, cobertura e rastreabilidade das regras: [docs/qualidade/plano-de-tes
 
 ## Endpoints
 
+**Autenticação:** o login define um cookie de sessão HttpOnly (`bt_sessao`), usado pelo front-end, e também devolve o token para uso como `Authorization: Bearer` (Swagger, curl). Escritas autenticadas pelo cookie exigem o cabeçalho `X-Requested-With: BlindTrack` (proteção contra CSRF).
+
 Todos sob `/api/v1`. Sucesso: `{ "data": ... }`. Listagens: `{ "data": [...], "meta": { page, pageSize, total, totalPages } }`.
 Erro: `{ "error": { "code", "message", "details?", "requestId" } }`. Em regras de negócio
 (422), `code` traz a regra violada (ex.: `RN09`).
 
-| Método e rota                                                                                                     | Perfis                                                          |
-| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `POST /auth/login`                                                                                                | público (limite de tentativas falhas por IP)                    |
-| `GET /auth/me`, `PATCH /auth/senha`                                                                               | qualquer usuário autenticado                                    |
-| `POST/GET /usuarios`, `GET/PATCH /usuarios/:id`                                                                   | ADMIN                                                           |
-| `POST /clientes`, `PATCH /clientes/:id`                                                                           | ADMIN, GESTOR, ATENDIMENTO (corrigir CPF/CNPJ: só ADMIN/GESTOR) |
-| `GET /clientes`, `GET /clientes/:id`                                                                              | + TECNICO, que recebe dados reduzidos e documento mascarado     |
-| `DELETE /clientes/:id` (inativação lógica)                                                                        | ADMIN, GESTOR                                                   |
-| `POST /veiculos`, `PATCH /veiculos/:id`                                                                           | ADMIN, GESTOR, ATENDIMENTO                                      |
-| `GET /veiculos`, `GET /veiculos/:id`                                                                              | + TECNICO                                                       |
-| `POST /ordens-servico` (abre OS e gera as etapas)                                                                 | ADMIN, GESTOR, ATENDIMENTO                                      |
-| `GET /ordens-servico` (`?status&clienteId&placa&numero&atrasada&entradaDe&entradaAte`), `GET /ordens-servico/:id` | internos                                                        |
-| `PATCH /ordens-servico/:id` (observações)                                                                         | ADMIN, GESTOR, ATENDIMENTO                                      |
-| `PATCH /ordens-servico/:id/status` (`SUSPENDER`/`RETOMAR`/`CANCELAR` + justificativa)                             | ADMIN, GESTOR                                                   |
-| `PATCH /ordens-servico/:id/previsao` (replanejamento com justificativa)                                           | ADMIN, GESTOR                                                   |
-| `GET /ordens-servico/:id/etapas`, `/historico`, `/linha-do-tempo`                                                 | internos                                                        |
-| `PATCH /etapas/:id/status` (`INICIAR`, `PAUSAR`, `RETOMAR`, `CONCLUIR`, `DISPENSAR`, `REABRIR`)                   | ADMIN, GESTOR, TECNICO (só as próprias)                         |
-| `PATCH /etapas/:id/responsavel`, `PATCH /etapas/:id/prazo`                                                        | ADMIN, GESTOR                                                   |
-| `POST/GET /ordens-servico/:id/ocorrencias`, `PATCH /ocorrencias/:id`                                              | internos (alterar: gestão ou responsável)                       |
-| `POST /ordens-servico/:id/documentos` (multipart, campo `arquivo`: PDF/PNG/JPEG até 10 MB)                        | internos                                                        |
-| `GET /ordens-servico/:id/documentos`, `GET /documentos/:id/arquivo`                                               | internos                                                        |
-| `PATCH /documentos/:id/status` (aprovar/rejeitar)                                                                 | ADMIN, GESTOR                                                   |
-| `GET/POST /modelos-etapa`, `PATCH /modelos-etapa/:id`                                                             | ADMIN, GESTOR                                                   |
-| `GET /cliente/minhas-ordens`, `GET /cliente/ordens/:id/acompanhar`, `GET /cliente/documentos/:id/arquivo`         | CLIENTE (só as próprias)                                        |
+| Método e rota                                                                                                                                | Perfis                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `POST /auth/login`                                                                                                                           | público (limite de tentativas falhas por IP)                    |
+| `GET /auth/me`, `PATCH /auth/senha`, `POST /auth/logout`                                                                                     | qualquer usuário autenticado (logout: público)                  |
+| `POST/GET /usuarios`, `GET/PATCH /usuarios/:id`                                                                                              | ADMIN                                                           |
+| `GET /usuarios/responsaveis` (lista mínima para atribuir responsáveis)                                                                       | ADMIN, GESTOR                                                   |
+| `POST /clientes`, `PATCH /clientes/:id`                                                                                                      | ADMIN, GESTOR, ATENDIMENTO (corrigir CPF/CNPJ: só ADMIN/GESTOR) |
+| `GET /clientes`, `GET /clientes/:id`                                                                                                         | + TECNICO, que recebe dados reduzidos e documento mascarado     |
+| `DELETE /clientes/:id` (inativação lógica)                                                                                                   | ADMIN, GESTOR                                                   |
+| `POST /veiculos`, `PATCH /veiculos/:id`                                                                                                      | ADMIN, GESTOR, ATENDIMENTO                                      |
+| `GET /veiculos`, `GET /veiculos/:id`                                                                                                         | + TECNICO                                                       |
+| `POST /ordens-servico` (abre OS e gera as etapas)                                                                                            | ADMIN, GESTOR, ATENDIMENTO                                      |
+| `GET /ordens-servico` (`?status&clienteId&placa&numero&cliente&atrasada&entradaDe&entradaAte&ordenarPor&direcao`), `GET /ordens-servico/:id` | internos                                                        |
+| `PATCH /ordens-servico/:id` (observações)                                                                                                    | ADMIN, GESTOR, ATENDIMENTO                                      |
+| `PATCH /ordens-servico/:id/status` (`SUSPENDER`/`RETOMAR`/`CANCELAR` + justificativa)                                                        | ADMIN, GESTOR                                                   |
+| `PATCH /ordens-servico/:id/previsao` (replanejamento com justificativa)                                                                      | ADMIN, GESTOR                                                   |
+| `GET /ordens-servico/:id/etapas`, `/historico`, `/linha-do-tempo`                                                                            | internos                                                        |
+| `PATCH /etapas/:id/status` (`INICIAR`, `PAUSAR`, `RETOMAR`, `CONCLUIR`, `DISPENSAR`, `REABRIR`)                                              | ADMIN, GESTOR, TECNICO (só as próprias)                         |
+| `PATCH /etapas/:id/responsavel`, `PATCH /etapas/:id/prazo`                                                                                   | ADMIN, GESTOR                                                   |
+| `POST/GET /ordens-servico/:id/ocorrencias`, `PATCH /ocorrencias/:id`                                                                         | internos (alterar: gestão ou responsável)                       |
+| `POST /ordens-servico/:id/documentos` (multipart, campo `arquivo`: PDF/PNG/JPEG até 10 MB)                                                   | internos                                                        |
+| `GET /ordens-servico/:id/documentos`, `GET /documentos/:id/arquivo`                                                                          | internos                                                        |
+| `PATCH /documentos/:id/status` (aprovar/rejeitar)                                                                                            | ADMIN, GESTOR                                                   |
+| `GET/POST /modelos-etapa`, `PATCH /modelos-etapa/:id`                                                                                        | ADMIN, GESTOR                                                   |
+| `GET /dashboard/indicadores`                                                                                                                 | internos                                                        |
+| `GET /cliente/minhas-ordens`, `GET /cliente/ordens/:id/acompanhar`, `GET /cliente/documentos/:id/arquivo`                                    | CLIENTE (só as próprias)                                        |
 
 ## Documentação
 

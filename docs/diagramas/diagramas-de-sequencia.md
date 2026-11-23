@@ -42,6 +42,28 @@ sequenceDiagram
     end
 ```
 
+### 1.1 Variante do front-end: sessão por cookie HttpOnly (ADR-26)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant F as Front-end (navegador)
+    participant API as API /api/v1
+    participant MW as authenticate
+
+    F->>API: POST /auth/login (X-Requested-With: BlindTrack, credentials: include)
+    API-->>F: 200 {tipo: "Cookie", usuario} + Set-Cookie bt_sessao (HttpOnly, SameSite=Strict, Path=/api)
+    note over F: o JavaScript nunca vê o token
+    F->>MW: GET /cliente/minhas-ordens (cookie enviado pelo navegador)
+    MW-->>F: 200 (leitura: o cookie basta)
+    F->>MW: PATCH /etapas/:id/status (cookie, SEM X-Requested-With)
+    MW-->>F: 403 CSRF_BLOQUEADO
+    F->>MW: PATCH /etapas/:id/status (cookie + X-Requested-With: BlindTrack)
+    MW-->>F: segue para authorize → validate → controller
+    F->>API: POST /auth/logout
+    API-->>F: 204 + Set-Cookie bt_sessao expirado
+```
+
 ## 2. Abrir ordem de serviço (UC05)
 
 ```mermaid

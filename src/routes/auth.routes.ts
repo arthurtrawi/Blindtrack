@@ -15,6 +15,8 @@ const limiteLogin = criarLimiteLogin({
 
 // Público (com limite de tentativas falhas por IP)
 authRoutes.post('/login', limiteLogin, validate({ body: loginSchema }), authController.login);
+// Apaga o cookie de sessão (P8). Não exige sessão válida: sair deve funcionar mesmo com token expirado.
+authRoutes.post('/logout', authController.logout);
 
 // Qualquer usuário autenticado, inclusive CLIENTE
 authRoutes.get('/me', authenticate, authController.me);

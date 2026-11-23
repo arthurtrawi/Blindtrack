@@ -1,4 +1,4 @@
-# Resultado da suíte de testes — 2026-11-23T08:20:59Z
+# Resultado da suíte de testes — 2026-11-23T09:03:34Z (após a Fase 4c)
 
  ✓ tests/integration/operacao.test.ts > Operação: prazos, status, ocorrências, uploads e modelo de etapas > Prazos (RN25–RN27) > identifica OS atrasada pelo filtro e pelo indicador calculado
  ✓ tests/integration/operacao.test.ts > Operação: prazos, status, ocorrências, uploads e modelo de etapas > Prazos (RN25–RN27) > identifica etapa atrasada e exige justificativa só ao replanejar (RN26)
@@ -16,15 +16,6 @@
  ✓ tests/integration/operacao.test.ts > Operação: prazos, status, ocorrências, uploads e modelo de etapas > Modelo de etapas (RF23) > cria etapa nova que vale só para OS futuras
  ✓ tests/integration/operacao.test.ts > Operação: prazos, status, ocorrências, uploads e modelo de etapas > Modelo de etapas (RF23) > impede etapa depois da ENTREGA, ordem duplicada e desativar etapa obrigatória
  ✓ tests/integration/operacao.test.ts > Operação: prazos, status, ocorrências, uploads e modelo de etapas > Modelo de etapas (RF23) > técnico não configura o modelo
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > faz login com credenciais válidas e devolve token Bearer sem dados sensíveis
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > usa a mesma mensagem para senha errada e e-mail inexistente (não revela cadastro)
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > recusa login de usuário inativo
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > valida o corpo do login com 400
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > GET /me exige token e devolve o usuário autenticado
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > invalida imediatamente o token de um usuário desativado depois do login
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > troca da própria senha derruba os tokens emitidos antes dela
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > redefinição de senha pelo ADMIN derruba as sessões do usuário
- ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > altera a própria senha exigindo a senha atual
  ✓ tests/integration/usuarios.test.ts > Usuários — /api/v1/usuarios > nega acesso ao perfil GESTOR (403)
  ✓ tests/integration/usuarios.test.ts > Usuários — /api/v1/usuarios > nega acesso ao perfil TECNICO (403)
  ✓ tests/integration/usuarios.test.ts > Usuários — /api/v1/usuarios > nega acesso ao perfil ATENDIMENTO (403)
@@ -37,16 +28,15 @@
  ✓ tests/integration/usuarios.test.ts > Usuários — /api/v1/usuarios > desativa usuário sem pendências e registra auditoria INATIVAR
  ✓ tests/integration/usuarios.test.ts > Usuários — /api/v1/usuarios > não converte usuário interno em usuário de portal
  ✓ tests/integration/usuarios.test.ts > Usuários — /api/v1/usuarios > retorna 400 para id malformado e 404 para id inexistente
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > cadastra cliente com dados normalizados e auditoria
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > cadastra pessoa jurídica com CNPJ alfanumérico
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > rejeita CPF inválido (400) e CPF duplicado (409)
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > TECNICO consulta só dados mínimos com documento mascarado e não cadastra (LGPD)
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > usuário CLIENTE não acessa o cadastro de clientes
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > lista com filtros por nome (parcial) e documento (com pontuação)
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > ATENDIMENTO edita contato, mas não corrige CPF; GESTOR corrige
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > não inativa cliente com OS não encerrada (RN36)
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > inativa cliente (soft delete), desativa o usuário do portal e o oculta das consultas
- ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > rejeita campos não previstos no corpo (mass assignment)
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > faz login com credenciais válidas e devolve token Bearer sem dados sensíveis
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > usa a mesma mensagem para senha errada e e-mail inexistente (não revela cadastro)
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > recusa login de usuário inativo
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > valida o corpo do login com 400
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > GET /me exige token e devolve o usuário autenticado
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > invalida imediatamente o token de um usuário desativado depois do login
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > troca da própria senha derruba os tokens emitidos antes dela
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > redefinição de senha pelo ADMIN derruba as sessões do usuário
+ ✓ tests/integration/auth.test.ts > Autenticação — /api/v1/auth > altera a própria senha exigindo a senha atual
  ✓ tests/integration/banco.test.ts > Modelagem — regras garantidas pelo PostgreSQL > gera número de OS único no formato OS-AAAA-NNNNNN (RN02)
  ✓ tests/integration/banco.test.ts > Modelagem — regras garantidas pelo PostgreSQL > impede duas OS não encerradas para o mesmo veículo (RN03)
  ✓ tests/integration/banco.test.ts > Modelagem — regras garantidas pelo PostgreSQL > permite nova OS para o veículo depois que a anterior é cancelada (RN03)
@@ -57,30 +47,35 @@
  ✓ tests/integration/banco.test.ts > Modelagem — regras garantidas pelo PostgreSQL > torna o histórico imutável: UPDATE e DELETE são bloqueados (RN28)
  ✓ tests/integration/banco.test.ts > Modelagem — regras garantidas pelo PostgreSQL > torna a auditoria imutável
  ✓ tests/integration/banco.test.ts > Modelagem — regras garantidas pelo PostgreSQL > impede excluir cliente com veículos vinculados (integridade referencial)
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN01: recusa abrir OS com veículo de outro cliente
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > abre a OS: número gerado, 8 etapas copiadas do modelo, histórico e auditoria
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN03: recusa segunda OS para o mesmo veículo
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN09/RN10: não inicia fora de ordem nem sem responsável
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN16: técnico não altera etapa de outro; ATENDIMENTO e CLIENTE não alteram etapas
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > inicia a primeira etapa: OS passa a EM_ANDAMENTO automaticamente (RN08)
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > pausa exige justificativa; retomada preserva a data de início (RN11)
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > conclui a etapa registrando a data de conclusão (RN11)
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN15: gestor reabre etapa concluída quando as posteriores estão pendentes
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN12/RN23: ocorrência impeditiva bloqueia a conclusão e replaneja a entrega
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN13: dispensa TROCA_VIDROS (gestor), mas nunca VISTORIA
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > com todas as etapas antes da entrega finalizadas, a OS fica PRONTA_PARA_ENTREGA
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN17: não conclui a entrega sem os documentos obrigatórios aprovados
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > documentos enviados e aprovados por humano liberam a entrega; OS vira ENTREGUE
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN05: OS entregue não aceita alterações operacionais
- ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > histórico completo e imutável; linha do tempo inclui o replanejamento
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > cadastra cliente com dados normalizados e auditoria
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > cadastra pessoa jurídica com CNPJ alfanumérico
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > rejeita CPF inválido (400) e CPF duplicado (409)
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > TECNICO consulta só dados mínimos com documento mascarado e não cadastra (LGPD)
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > usuário CLIENTE não acessa o cadastro de clientes
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > lista com filtros por nome (parcial) e documento (com pontuação)
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > ATENDIMENTO edita contato, mas não corrige CPF; GESTOR corrige
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > não inativa cliente com OS não encerrada (RN36)
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > inativa cliente (soft delete), desativa o usuário do portal e o oculta das consultas
+ ✓ tests/integration/clientes.test.ts > Clientes — /api/v1/clientes > rejeita campos não previstos no corpo (mass assignment)
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > login define cookie HttpOnly, SameSite=Strict, restrito a /api
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > sem o cabeçalho do app, o token vem no corpo (Swagger, curl)
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > com o cabeçalho do app, o token NÃO vem no corpo (só no cookie)
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > o cookie autentica leituras; escritas exigem o cabeçalho anti-CSRF
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > Bearer continua funcionando e não exige o cabeçalho do app
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > logout apaga o cookie e encerra a sessão do navegador
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > logout é idempotente: funciona sem sessão
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > trocar a senha apaga o cookie da sessão atual
+ ✓ tests/integration/sessao-cookie.test.ts > Sessão por cookie HttpOnly > CORS: origem permitida recebe credenciais e o cabeçalho do app; outra origem não
  ✓ tests/integration/openapi.test.ts > Especificação OpenAPI > tem operationId único e respostas em todas as operações
  ✓ tests/integration/openapi.test.ts > Especificação OpenAPI > é servida pelo Swagger UI
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /health existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > POST /auth/login existe e respeita os perfis documentados
+ ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > POST /auth/logout existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /auth/me existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > PATCH /auth/senha existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > POST /usuarios existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /usuarios existe e respeita os perfis documentados
+ ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /usuarios/responsaveis existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /usuarios/{id} existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > PATCH /usuarios/{id} existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > POST /clientes existe e respeita os perfis documentados
@@ -114,9 +109,26 @@
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /modelos-etapa existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > POST /modelos-etapa existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > PATCH /modelos-etapa/{id} existe e respeita os perfis documentados
+ ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /dashboard/indicadores existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /cliente/minhas-ordens existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /cliente/ordens/{id}/acompanhar existe e respeita os perfis documentados
  ✓ tests/integration/openapi.test.ts > Documentação × rotas reais > GET /cliente/documentos/{id}/arquivo existe e respeita os perfis documentados
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN01: recusa abrir OS com veículo de outro cliente
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > abre a OS: número gerado, 8 etapas copiadas do modelo, histórico e auditoria
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN03: recusa segunda OS para o mesmo veículo
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN09/RN10: não inicia fora de ordem nem sem responsável
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN16: técnico não altera etapa de outro; ATENDIMENTO e CLIENTE não alteram etapas
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > inicia a primeira etapa: OS passa a EM_ANDAMENTO automaticamente (RN08)
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > pausa exige justificativa; retomada preserva a data de início (RN11)
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > conclui a etapa registrando a data de conclusão (RN11)
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN15: gestor reabre etapa concluída quando as posteriores estão pendentes
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN12/RN23: ocorrência impeditiva bloqueia a conclusão e replaneja a entrega
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN13: dispensa TROCA_VIDROS (gestor), mas nunca VISTORIA
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > com todas as etapas antes da entrega finalizadas, a OS fica PRONTA_PARA_ENTREGA
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN17: não conclui a entrega sem os documentos obrigatórios aprovados
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > documentos enviados e aprovados por humano liberam a entrega; OS vira ENTREGUE
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > RN05: OS entregue não aceita alterações operacionais
+ ✓ tests/integration/fluxo-ordem.test.ts > Fluxo completo da ordem de serviço > histórico completo e imutável; linha do tempo inclui o replanejamento
  ✓ tests/integration/veiculos.test.ts > Veículos — /api/v1/veiculos > cadastra veículo com placa e chassi normalizados e devolve o proprietário
  ✓ tests/integration/veiculos.test.ts > Veículos — /api/v1/veiculos > rejeita placa e chassi duplicados com 409 e mensagem específica
  ✓ tests/integration/veiculos.test.ts > Veículos — /api/v1/veiculos > rejeita veículo de cliente inativado
@@ -129,14 +141,23 @@
  ✓ tests/integration/portal.test.ts > Portal do cliente — /api/v1/cliente > baixa só documento visível da própria OS
  ✓ tests/integration/portal.test.ts > Portal do cliente — /api/v1/cliente > RN32: cliente não acessa rotas internas nem altera nada
  ✓ tests/integration/portal.test.ts > Portal do cliente — /api/v1/cliente > usuários internos não usam o portal
- ✓ tests/unit/seguranca.test.ts > limite de tentativas de login > bloqueia com 429 após exceder o limite de falhas
- ✓ tests/unit/seguranca.test.ts > sanitização da auditoria (LGPD) > remove senha, hash e token, inclusive em objetos aninhados
- ✓ tests/unit/seguranca.test.ts > JWT > gera token verificável com sub e perfil
- ✓ tests/unit/seguranca.test.ts > JWT > rejeita token assinado com outro segredo
- ✓ tests/unit/seguranca.test.ts > JWT > rejeita token sem assinatura (alg "none")
- ✓ tests/unit/seguranca.test.ts > JWT > informa token expirado
- ✓ tests/unit/seguranca.test.ts > máscara de dados pessoais nos logs HTTP (LGPD) > mascara parâmetros sensíveis da URL e preserva os demais
- ✓ tests/unit/seguranca.test.ts > máscara de dados pessoais nos logs HTTP (LGPD) > mascara o objeto de query
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P1 — GET /dashboard/indicadores > agrega os números reais da operação
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P1 — GET /dashboard/indicadores > cliente não acessa o dashboard interno
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P2 — GET /ordens-servico enriquecida > traz a etapa atual com o responsável
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P2 — GET /ordens-servico enriquecida > busca por nome do cliente, sem diferenciar maiúsculas
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P2 — GET /ordens-servico enriquecida > ordena por previsão de entrega e por número, nas duas direções
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P2 — GET /ordens-servico enriquecida > rejeita campo de ordenação não permitido
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P5 — descrição da etapa no portal > o cliente recebe a descrição institucional da etapa
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P7 — GET /usuarios/responsaveis > GESTOR obtém só TECNICO e GESTOR ativos, com dados mínimos
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P7 — GET /usuarios/responsaveis > GESTOR continua sem acesso ao cadastro completo de usuários
+ ✓ tests/integration/apoio-front-end.test.ts > Apoio ao front-end (Fase 4c) > P7 — GET /usuarios/responsaveis > TECNICO não lista responsáveis
+ ✓ tests/unit/error-handler.test.ts > errorHandler > traduz erro do Prisma P2002 (duplicidade)
+ ✓ tests/unit/error-handler.test.ts > errorHandler > traduz erro do Prisma P2025 (registro inexistente)
+ ✓ tests/unit/error-handler.test.ts > errorHandler > traduz erro do Prisma P2003 (integridade referencial)
+ ✓ tests/unit/error-handler.test.ts > errorHandler > erro desconhecido do Prisma vira 500 genérico, sem detalhes internos
+ ✓ tests/unit/error-handler.test.ts > errorHandler > erro inesperado não expõe mensagem nem stack trace
+ ✓ tests/unit/error-handler.test.ts > errorHandler > erros do multer: arquivo grande → 413; demais → 400
+ ✓ tests/unit/error-handler.test.ts > errorHandler > corpo JSON acima do limite → 413
  ✓ tests/integration/app.test.ts > Infraestrutura HTTP > retorna 404 padronizado para rota inexistente
  ✓ tests/integration/app.test.ts > Infraestrutura HTTP > devolve o cabeçalho X-Request-Id e reaproveita um id válido recebido
  ✓ tests/integration/app.test.ts > Infraestrutura HTTP > rejeita JSON malformado com 400
@@ -145,13 +166,29 @@
  ✓ tests/integration/app.test.ts > Infraestrutura HTTP > serve a documentação Swagger em /api/v1/docs
  ✓ tests/integration/app.test.ts > Infraestrutura HTTP > GET /api/v1/health retorna 200 com banco disponível
  ↓ tests/integration/app.test.ts > Infraestrutura HTTP > GET /api/v1/health retorna 503 com banco indisponível
- ✓ tests/unit/error-handler.test.ts > errorHandler > traduz erro do Prisma P2002 (duplicidade)
- ✓ tests/unit/error-handler.test.ts > errorHandler > traduz erro do Prisma P2025 (registro inexistente)
- ✓ tests/unit/error-handler.test.ts > errorHandler > traduz erro do Prisma P2003 (integridade referencial)
- ✓ tests/unit/error-handler.test.ts > errorHandler > erro desconhecido do Prisma vira 500 genérico, sem detalhes internos
- ✓ tests/unit/error-handler.test.ts > errorHandler > erro inesperado não expõe mensagem nem stack trace
- ✓ tests/unit/error-handler.test.ts > errorHandler > erros do multer: arquivo grande → 413; demais → 400
- ✓ tests/unit/error-handler.test.ts > errorHandler > corpo JSON acima do limite → 413
+ ✓ tests/unit/seguranca.test.ts > limite de tentativas de login > bloqueia com 429 após exceder o limite de falhas
+ ✓ tests/unit/seguranca.test.ts > sanitização da auditoria (LGPD) > remove senha, hash e token, inclusive em objetos aninhados
+ ✓ tests/unit/seguranca.test.ts > JWT > gera token verificável com sub e perfil
+ ✓ tests/unit/seguranca.test.ts > JWT > rejeita token assinado com outro segredo
+ ✓ tests/unit/seguranca.test.ts > JWT > rejeita token sem assinatura (alg "none")
+ ✓ tests/unit/seguranca.test.ts > JWT > informa token expirado
+ ✓ tests/unit/seguranca.test.ts > máscara de dados pessoais nos logs HTTP (LGPD) > mascara parâmetros sensíveis da URL e preserva os demais
+ ✓ tests/unit/seguranca.test.ts > máscara de dados pessoais nos logs HTTP (LGPD) > mascara o objeto de query
+ ✓ tests/unit/validators.test.ts > veículo > normaliza placa e chassi
+ ✓ tests/unit/validators.test.ts > veículo > rejeita chassi com letras proibidas (I, O, Q)
+ ✓ tests/unit/validators.test.ts > veículo > rejeita ano-modelo incoerente com o ano de fabricação
+ ✓ tests/unit/validators.test.ts > veículo > rejeita campos não previstos (mass assignment)
+ ✓ tests/unit/validators.test.ts > veículo > exige ao menos um campo no PATCH
+ ✓ tests/unit/validators.test.ts > cliente > normaliza documento, e-mail, nome e telefone
+ ✓ tests/unit/validators.test.ts > cliente > rejeita CNPJ para pessoa física
+ ✓ tests/unit/validators.test.ts > cliente > aceita CNPJ alfanumérico para pessoa jurídica
+ ✓ tests/unit/validators.test.ts > usuário e campos comuns > exige clienteId somente para o perfil CLIENTE
+ ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha curta
+ ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha sem números
+ ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha sem letras
+ ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha acima de 72 bytes
+ ✓ tests/unit/validators.test.ts > usuário e campos comuns > aceita senha forte
+ ✓ tests/unit/validators.test.ts > usuário e campos comuns > valida e normaliza e-mail e telefone
  ✓ tests/unit/dominio.test.ts > Máquina de estados da etapa > inicia a primeira etapa quando há responsável
  ✓ tests/unit/dominio.test.ts > Máquina de estados da etapa > RN09: não inicia etapa com anterior pendente; libera após concluída ou dispensada
  ✓ tests/unit/dominio.test.ts > Máquina de estados da etapa > RN10: não inicia nem retoma sem responsável
@@ -172,21 +209,6 @@
  ✓ tests/unit/dominio.test.ts > Prazos (RN25–RN27) > concluída depois do previsto continua registrada como atrasada, com desvio real
  ✓ tests/unit/dominio.test.ts > Prazos (RN25–RN27) > concluída antes do previsto tem desvio negativo e não está atrasada
  ✓ tests/unit/dominio.test.ts > Prazos (RN25–RN27) > etapa dispensada nunca é considerada atrasada
- ✓ tests/unit/validators.test.ts > veículo > normaliza placa e chassi
- ✓ tests/unit/validators.test.ts > veículo > rejeita chassi com letras proibidas (I, O, Q)
- ✓ tests/unit/validators.test.ts > veículo > rejeita ano-modelo incoerente com o ano de fabricação
- ✓ tests/unit/validators.test.ts > veículo > rejeita campos não previstos (mass assignment)
- ✓ tests/unit/validators.test.ts > veículo > exige ao menos um campo no PATCH
- ✓ tests/unit/validators.test.ts > cliente > normaliza documento, e-mail, nome e telefone
- ✓ tests/unit/validators.test.ts > cliente > rejeita CNPJ para pessoa física
- ✓ tests/unit/validators.test.ts > cliente > aceita CNPJ alfanumérico para pessoa jurídica
- ✓ tests/unit/validators.test.ts > usuário e campos comuns > exige clienteId somente para o perfil CLIENTE
- ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha curta
- ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha sem números
- ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha sem letras
- ✓ tests/unit/validators.test.ts > usuário e campos comuns > rejeita senha acima de 72 bytes
- ✓ tests/unit/validators.test.ts > usuário e campos comuns > aceita senha forte
- ✓ tests/unit/validators.test.ts > usuário e campos comuns > valida e normaliza e-mail e telefone
  ✓ tests/unit/documento.test.ts > CPF > aceita CPF válido 52998224725
  ✓ tests/unit/documento.test.ts > CPF > aceita CPF válido 12345678909
  ✓ tests/unit/documento.test.ts > CPF > aceita CPF válido 11144477735
@@ -207,6 +229,6 @@
  ✓ tests/unit/app-error.test.ts > AppError > mapeia cada erro de domínio para o status HTTP correto
  ✓ tests/unit/app-error.test.ts > AppError > preserva nome da classe, código e detalhes
  ✓ tests/unit/app-error.test.ts > AppError > gera mensagem de recurso não encontrado
- Test Files  16 passed (16)
-      Tests  206 passed | 1 skipped (207)
-   Duration  43.16s (tests 83%, import 16%, transform 1%)
+ Test Files  18 passed (18)
+      Tests  228 passed | 1 skipped (229)
+   Duration  64.21s (tests 82%, import 17%, worker 1%, transform 1%)

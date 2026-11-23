@@ -5,6 +5,7 @@
 import { Router } from 'express';
 import { authRoutes } from './auth.routes.js';
 import { clienteRoutes } from './cliente.routes.js';
+import { dashboardRoutes } from './dashboard.routes.js';
 import { documentoRoutes } from './documento.routes.js';
 import { etapaRoutes } from './etapa.routes.js';
 import { healthRoutes } from './health.routes.js';
@@ -27,4 +28,5 @@ v1Routes.use('/etapas', etapaRoutes);
 v1Routes.use('/ocorrencias', ocorrenciaRoutes);
 v1Routes.use('/documentos', documentoRoutes);
 v1Routes.use('/modelos-etapa', modeloEtapaRoutes);
+v1Routes.use('/dashboard', dashboardRoutes);
 v1Routes.use('/cliente', portalRoutes);
