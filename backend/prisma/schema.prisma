@@ -1,0 +1,475 @@
+// =============================================================
+// BlindTrack — schema Prisma (Fase 3 — Modelagem)
+//
+// Convenções:
+//   - Modelos e campos em camelCase no código; tabelas e colunas em snake_case no banco (@map/@@map).
+//   - IDs UUID v7 (ordenáveis no tempo, o que é melhor para índices B-tree que o UUID v4).
+//   - Datas em timestamptz(3): UTC com precisão de milissegundos.
+//   - onDelete: Restrict em todas as FKs. Nenhum registro histórico é apagado em cascata.
+//
+// Regras que o Prisma não expressa ficam em SQL na migration `init`:
+//   - sequence + função do número da OS (RN02);
+//   - índice único parcial "uma OS ativa por veículo" (RN03);
+//   - CHECK constraints de consistência (RN10, RN11, RN21, perfil CLIENTE);
+//   - triggers append-only em historico_status, auditoria e alteracoes_previsao (RN28).
+// =============================================================
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -------------------------------------------------------------
+// Enums
+// -------------------------------------------------------------
+
+enum PerfilUsuario {
+  ADMIN
+  GESTOR
+  TECNICO
+  ATENDIMENTO
+  CLIENTE
+
+  @@map("perfil_usuario")
+}
+
+enum TipoPessoa {
+  FISICA
+  JURIDICA
+
+  @@map("tipo_pessoa")
+}
+
+enum StatusOrdemServico {
+  ABERTA
+  EM_ANDAMENTO
+  SUSPENSA
+  PRONTA_PARA_ENTREGA
+  ENTREGUE
+  CANCELADA
+
+  @@map("status_ordem_servico")
+}
+
+enum StatusEtapa {
+  PENDENTE
+  EM_ANDAMENTO
+  PAUSADA
+  CONCLUIDA
+  DISPENSADA
+
+  @@map("status_etapa")
+}
+
+enum TipoOcorrencia {
+  AGUARDANDO_PECA
+  PENDENCIA_DOCUMENTAL
+  RETRABALHO
+  ATRASO
+  OUTROS
+
+  @@map("tipo_ocorrencia")
+}
+
+enum PrioridadeOcorrencia {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+
+  @@map("prioridade_ocorrencia")
+}
+
+enum StatusOcorrencia {
+  ABERTA
+  EM_TRATAMENTO
+  RESOLVIDA
+  CANCELADA
+
+  @@map("status_ocorrencia")
+}
+
+enum TipoDocumento {
+  CONTRATO
+  CHECKLIST_VISTORIA
+  DECLARACAO_BLINDAGEM
+  TERMO_ENTREGA
+  NOTA_FISCAL
+  LAUDO_TECNICO
+  FOTO
+  OUTRO
+
+  @@map("tipo_documento")
+}
+
+enum StatusDocumento {
+  PENDENTE
+  APROVADO
+  REJEITADO
+
+  @@map("status_documento")
+}
+
+/// Origem do evento registrado no histórico.
+enum TipoEventoHistorico {
+  ORDEM_SERVICO
+  ETAPA
+  OCORRENCIA
+  DOCUMENTO
+
+  @@map("tipo_evento_historico")
+}
+
+enum AcaoAuditoria {
+  CRIAR
+  ATUALIZAR
+  ALTERAR_STATUS
+  INATIVAR
+  REATIVAR
+
+  @@map("acao_auditoria")
+}
+
+// -------------------------------------------------------------
+// Cadastros
+// -------------------------------------------------------------
+
+/// Pessoa física ou jurídica dona do(s) veículo(s). Soft delete via deletedAt (ADR-08).
+model Cliente {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  tipoPessoa  TipoPessoa @map("tipo_pessoa")
+  nome        String     @db.VarChar(150)
+  /// Normalizado sem pontuação: CPF com 11 dígitos ou CNPJ com 14 caracteres (numérico ou alfanumérico, IN RFB 2.229/2024).
+  cpfCnpj     String     @unique @map("cpf_cnpj") @db.VarChar(14)
+  /// Não é único: o mesmo contato pode responder por um CPF e um CNPJ.
+  email       String     @db.VarChar(254)
+  telefone    String     @db.VarChar(20)
+  cep         String?    @db.VarChar(8)
+  logradouro  String?    @db.VarChar(150)
+  numero      String?    @db.VarChar(10)
+  complemento String?    @db.VarChar(60)
+  bairro      String?    @db.VarChar(80)
+  cidade      String?    @db.VarChar(80)
+  uf          String?    @db.Char(2)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(3)
+
+  veiculos      Veiculo[]
+  ordensServico OrdemServico[]
+  usuarioPortal Usuario?
+
+  @@index([nome])
+  @@index([email])
+  @@index([deletedAt])
+  @@map("clientes")
+}
+
+model Veiculo {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  /// Normalizada: maiúsculas, sem hífen (ABC1234 ou ABC1D23).
+  placa         String   @unique @db.VarChar(7)
+  /// VIN com 17 caracteres, maiúsculo.
+  chassi        String   @unique @db.VarChar(17)
+  marca         String   @db.VarChar(50)
+  modelo        String   @db.VarChar(80)
+  anoFabricacao Int      @map("ano_fabricacao") @db.SmallInt
+  anoModelo     Int      @map("ano_modelo") @db.SmallInt
+  cor           String   @db.VarChar(30)
+  clienteId     String   @map("cliente_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente       Cliente        @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  ordensServico OrdemServico[]
+
+  @@index([clienteId])
+  @@map("veiculos")
+}
+
+/// Usuário interno ou de portal. Nunca é excluído, apenas desativado (ativo = false).
+model Usuario {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  nome            String        @db.VarChar(150)
+  /// Armazenado sempre em minúsculas (normalizado pelo service): unicidade sem diferenciar caixa.
+  email           String        @unique @db.VarChar(254)
+  senhaHash       String        @map("senha_hash") @db.VarChar(100)
+  perfil          PerfilUsuario
+  ativo           Boolean       @default(true)
+  /// Obrigatório se e somente se perfil = CLIENTE (CHECK no banco). 1:1 com Cliente.
+  clienteId       String?       @unique @map("cliente_id") @db.Uuid
+  ultimoLoginEm   DateTime?     @map("ultimo_login_em") @db.Timestamptz(3)
+  /// Tokens emitidos antes desta data são recusados (troca/redefinição de senha).
+  senhaAlteradaEm DateTime?     @map("senha_alterada_em") @db.Timestamptz(3)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+
+  ordensAbertas          OrdemServico[]      @relation("OrdemAbertaPor")
+  etapasResponsavel      EtapaProcesso[]     @relation("EtapaResponsavel")
+  historicos             HistoricoStatus[]
+  ocorrenciasResponsavel Ocorrencia[]        @relation("OcorrenciaResponsavel")
+  ocorrenciasAbertas     Ocorrencia[]        @relation("OcorrenciaAbertaPor")
+  documentosEnviados     Documento[]         @relation("DocumentoEnviadoPor")
+  documentosAvaliados    Documento[]         @relation("DocumentoAvaliadoPor")
+  alteracoesPrevisao     AlteracaoPrevisao[]
+  auditorias             Auditoria[]
+
+  @@index([perfil, ativo])
+  @@map("usuarios")
+}
+
+// -------------------------------------------------------------
+// Processo
+// -------------------------------------------------------------
+
+/// Modelo configurável de etapas (ADR-01). As OS copiam as etapas ativas na abertura.
+/// Nunca é excluído: desative com ativo = false.
+model ModeloEtapa {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  /// Identificador estável usado pelas regras (ex.: ENTREGA). Maiúsculas e underscore.
+  codigo      String   @unique @db.VarChar(40)
+  nome        String   @db.VarChar(80)
+  descricao   String?  @db.Text
+  /// Posição na sequência. Única entre os modelos ativos (índice parcial no banco).
+  ordem       Int      @db.SmallInt
+  /// false = etapa dispensável (RN13).
+  obrigatoria Boolean  @default(true)
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  etapas EtapaProcesso[]
+
+  @@index([ativo, ordem])
+  @@map("modelos_etapa")
+}
+
+model OrdemServico {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  /// Gerado pelo banco: OS-AAAA-NNNNNN (sequence os_numero_seq, RN02).
+  numero          String             @unique @default(dbgenerated("gerar_numero_os()")) @db.VarChar(20)
+  veiculoId       String             @map("veiculo_id") @db.Uuid
+  /// Cliente no momento da abertura. Fica gravado mesmo que o veículo mude de dono depois.
+  clienteId       String             @map("cliente_id") @db.Uuid
+  status          StatusOrdemServico @default(ABERTA)
+  dataEntrada     DateTime           @default(now()) @map("data_entrada") @db.Timestamptz(3)
+  /// Prazo planejado vigente. As alterações ficam registradas em AlteracaoPrevisao.
+  previsaoEntrega DateTime           @map("previsao_entrega") @db.Timestamptz(3)
+  /// Prazo real (preenchido ao concluir a etapa ENTREGA).
+  dataEntrega     DateTime?          @map("data_entrega") @db.Timestamptz(3)
+  /// Observações internas: nunca expostas no portal do cliente.
+  observacoes     String?            @db.Text
+  abertaPorId     String             @map("aberta_por_id") @db.Uuid
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  veiculo   Veiculo @relation(fields: [veiculoId], references: [id], onDelete: Restrict)
+  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  abertaPor Usuario @relation("OrdemAbertaPor", fields: [abertaPorId], references: [id], onDelete: Restrict)
+
+  etapas             EtapaProcesso[]
+  historicos         HistoricoStatus[]
+  ocorrencias        Ocorrencia[]
+  documentos         Documento[]
+  alteracoesPrevisao AlteracaoPrevisao[]
+
+  @@index([status])
+  @@index([clienteId])
+  @@index([veiculoId])
+  @@index([previsaoEntrega])
+  @@index([dataEntrada])
+  @@map("ordens_servico")
+}
+
+/// Etapa concreta de uma OS (cópia do ModeloEtapa no momento da abertura).
+model EtapaProcesso {
+  id                String      @id @default(uuid(7)) @db.Uuid
+  ordemServicoId    String      @map("ordem_servico_id") @db.Uuid
+  modeloEtapaId     String?     @map("modelo_etapa_id") @db.Uuid
+  codigo            String      @db.VarChar(40)
+  nome              String      @db.VarChar(80)
+  descricao         String?     @db.Text
+  ordem             Int         @db.SmallInt
+  obrigatoria       Boolean     @default(true)
+  status            StatusEtapa @default(PENDENTE)
+  /// Obrigatório quando status = EM_ANDAMENTO (CHECK no banco, RN10).
+  responsavelId     String?     @map("responsavel_id") @db.Uuid
+  /// Primeira vez em que a etapa foi iniciada. Não é sobrescrita ao retomar (RN11).
+  dataInicio        DateTime?   @map("data_inicio") @db.Timestamptz(3)
+  previsaoConclusao DateTime?   @map("previsao_conclusao") @db.Timestamptz(3)
+  /// Obrigatória quando status = CONCLUIDA (CHECK no banco, RN11).
+  dataConclusao     DateTime?   @map("data_conclusao") @db.Timestamptz(3)
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  ordemServico OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Restrict)
+  modeloEtapa  ModeloEtapa? @relation(fields: [modeloEtapaId], references: [id], onDelete: Restrict)
+  responsavel  Usuario?     @relation("EtapaResponsavel", fields: [responsavelId], references: [id], onDelete: Restrict)
+
+  historicos         HistoricoStatus[]
+  ocorrencias        Ocorrencia[]
+  alteracoesPrevisao AlteracaoPrevisao[]
+
+  @@unique([ordemServicoId, ordem])
+  @@unique([ordemServicoId, codigo])
+  @@index([responsavelId, status])
+  @@index([status, previsaoConclusao])
+  @@map("etapas_processo")
+}
+
+// -------------------------------------------------------------
+// Rastreabilidade (append-only)
+// -------------------------------------------------------------
+
+/// Histórico imutável de mudanças de status (RN27, RN28). UPDATE/DELETE bloqueados por trigger.
+model HistoricoStatus {
+  id              String              @id @default(uuid(7)) @db.Uuid
+  ordemServicoId  String              @map("ordem_servico_id") @db.Uuid
+  etapaProcessoId String?             @map("etapa_processo_id") @db.Uuid
+  ocorrenciaId    String?             @map("ocorrencia_id") @db.Uuid
+  documentoId     String?             @map("documento_id") @db.Uuid
+  tipoEvento      TipoEventoHistorico @map("tipo_evento")
+  /// Nulo quando o evento é a criação do registro.
+  statusAnterior  String?             @map("status_anterior") @db.VarChar(30)
+  statusNovo      String              @map("status_novo") @db.VarChar(30)
+  descricao       String              @db.Text
+  /// Se o evento aparece na linha do tempo do portal do cliente (RN31).
+  visivelCliente  Boolean             @default(false) @map("visivel_cliente")
+  usuarioId       String              @map("usuario_id") @db.Uuid
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  ordemServico  OrdemServico   @relation(fields: [ordemServicoId], references: [id], onDelete: Restrict)
+  etapaProcesso EtapaProcesso? @relation(fields: [etapaProcessoId], references: [id], onDelete: Restrict)
+  ocorrencia    Ocorrencia?    @relation(fields: [ocorrenciaId], references: [id], onDelete: Restrict)
+  documento     Documento?     @relation(fields: [documentoId], references: [id], onDelete: Restrict)
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([ordemServicoId, createdAt])
+  @@index([etapaProcessoId])
+  @@map("historico_status")
+}
+
+/// Replanejamento de prazo de OS ou etapa, com justificativa (ADR-02, RN26). Imutável.
+model AlteracaoPrevisao {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  ordemServicoId   String    @map("ordem_servico_id") @db.Uuid
+  /// Nulo = alteração da previsão de entrega da OS; preenchido = previsão da etapa.
+  etapaProcessoId  String?   @map("etapa_processo_id") @db.Uuid
+  /// Ocorrência que motivou o replanejamento, se houver (RN23).
+  ocorrenciaId     String?   @map("ocorrencia_id") @db.Uuid
+  previsaoAnterior DateTime? @map("previsao_anterior") @db.Timestamptz(3)
+  previsaoNova     DateTime  @map("previsao_nova") @db.Timestamptz(3)
+  justificativa    String    @db.Text
+  usuarioId        String    @map("usuario_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  ordemServico  OrdemServico   @relation(fields: [ordemServicoId], references: [id], onDelete: Restrict)
+  etapaProcesso EtapaProcesso? @relation(fields: [etapaProcessoId], references: [id], onDelete: Restrict)
+  ocorrencia    Ocorrencia?    @relation(fields: [ocorrenciaId], references: [id], onDelete: Restrict)
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([ordemServicoId, createdAt])
+  @@index([etapaProcessoId])
+  @@map("alteracoes_previsao")
+}
+
+// -------------------------------------------------------------
+// Ocorrências e documentos
+// -------------------------------------------------------------
+
+model Ocorrencia {
+  id                   String               @id @default(uuid(7)) @db.Uuid
+  ordemServicoId       String               @map("ordem_servico_id") @db.Uuid
+  etapaProcessoId      String?              @map("etapa_processo_id") @db.Uuid
+  titulo               String               @db.VarChar(150)
+  descricao            String               @db.Text
+  tipo                 TipoOcorrencia
+  prioridade           PrioridadeOcorrencia @default(MEDIA)
+  status               StatusOcorrencia     @default(ABERTA)
+  /// Bloqueia a conclusão da etapa vinculada enquanto não resolvida (RN12, RN22).
+  impeditiva           Boolean              @default(false)
+  visivelCliente       Boolean              @default(false) @map("visivel_cliente")
+  /// Texto exibido ao cliente (a descrição interna nunca é exposta).
+  descricaoCliente     String?              @map("descricao_cliente") @db.Text
+  /// Obrigatória quando status = RESOLVIDA (CHECK no banco, RN21).
+  solucao              String?              @db.Text
+  usuarioResponsavelId String               @map("usuario_responsavel_id") @db.Uuid
+  abertaPorId          String               @map("aberta_por_id") @db.Uuid
+  dataAbertura         DateTime             @default(now()) @map("data_abertura") @db.Timestamptz(3)
+  dataResolucao        DateTime?            @map("data_resolucao") @db.Timestamptz(3)
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  ordemServico       OrdemServico   @relation(fields: [ordemServicoId], references: [id], onDelete: Restrict)
+  etapaProcesso      EtapaProcesso? @relation(fields: [etapaProcessoId], references: [id], onDelete: Restrict)
+  usuarioResponsavel Usuario        @relation("OcorrenciaResponsavel", fields: [usuarioResponsavelId], references: [id], onDelete: Restrict)
+  abertaPor          Usuario        @relation("OcorrenciaAbertaPor", fields: [abertaPorId], references: [id], onDelete: Restrict)
+
+  historicos         HistoricoStatus[]
+  alteracoesPrevisao AlteracaoPrevisao[]
+
+  @@index([ordemServicoId, status])
+  @@index([etapaProcessoId, status])
+  @@index([usuarioResponsavelId, status])
+  @@map("ocorrencias")
+}
+
+model Documento {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  ordemServicoId String          @map("ordem_servico_id") @db.Uuid
+  nome           String          @db.VarChar(150)
+  tipo           TipoDocumento
+  /// Chave relativa no storage (nunca caminho absoluto nem URL pública).
+  caminhoArquivo String          @unique @map("caminho_arquivo") @db.VarChar(255)
+  nomeOriginal   String          @map("nome_original") @db.VarChar(255)
+  mimeType       String          @map("mime_type") @db.VarChar(100)
+  tamanhoBytes   Int             @map("tamanho_bytes")
+  /// Hash do conteúdo para verificação de integridade.
+  hashSha256     String          @map("hash_sha256") @db.Char(64)
+  status         StatusDocumento @default(PENDENTE)
+  visivelCliente Boolean         @default(false) @map("visivel_cliente")
+  enviadoPorId   String          @map("enviado_por_id") @db.Uuid
+  /// Decisão humana de aprovação/rejeição (RN00, RN17).
+  avaliadoPorId  String?         @map("avaliado_por_id") @db.Uuid
+  avaliadoEm     DateTime?       @map("avaliado_em") @db.Timestamptz(3)
+  motivoRejeicao String?         @map("motivo_rejeicao") @db.Text
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  ordemServico OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Restrict)
+  enviadoPor   Usuario      @relation("DocumentoEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: Restrict)
+  avaliadoPor  Usuario?     @relation("DocumentoAvaliadoPor", fields: [avaliadoPorId], references: [id], onDelete: Restrict)
+
+  historicos HistoricoStatus[]
+
+  @@index([ordemServicoId, tipo, status])
+  @@map("documentos")
+}
+
+/// Trilha de auditoria genérica (RF27). Imutável. Nunca guarda senha/hash/token.
+model Auditoria {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  /// Nulo para ações do sistema (ex.: seed).
+  usuarioId       String?       @map("usuario_id") @db.Uuid
+  entidade        String        @db.VarChar(50)
+  entidadeId      String        @map("entidade_id") @db.Uuid
+  acao            AcaoAuditoria
+  dadosAnteriores Json?         @map("dados_anteriores")
+  dadosNovos      Json?         @map("dados_novos")
+  requestId       String?       @map("request_id") @db.VarChar(64)
+  ip              String?       @db.VarChar(45)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([entidade, entidadeId, createdAt])
+  @@index([usuarioId, createdAt])
+  @@map("auditoria")
+}
