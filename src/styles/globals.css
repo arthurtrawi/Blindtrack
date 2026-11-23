@@ -1,0 +1,56 @@
+/*
+ * Design System BlindTrack — tokens (Tailwind CSS 4, bloco @theme).
+ * Contrastes calculados na Fase 1 (docs/fase-1-planejamento.md §2), todos ≥ WCAG AA.
+ */
+@import 'tailwindcss';
+
+@theme {
+  /* Fonte do sistema: sem requisição a terceiros, carregamento instantâneo. */
+  --font-sans:
+    ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Institucional (azul-marinho). 900 = cor da marca (16,5:1 sobre branco). */
+  --color-marinho-50: #eef3fa;
+  --color-marinho-100: #d5e0f0;
+  --color-marinho-700: #1b3a66;
+  --color-marinho-800: #132c50;
+  --color-marinho-900: #0b1f3a;
+  --color-marinho-950: #06132a;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-slate-50 font-sans text-slate-900 antialiased;
+  }
+
+  /* Foco sempre visível ao navegar por teclado (WCAG 2.4.7). */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-blue-600;
+  }
+
+  /* Respeita quem pede menos movimento. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Visível só para leitores de tela (rótulos auxiliares). */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    @apply sr-only;
+  }
+}
