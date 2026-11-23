@@ -1,0 +1,11 @@
+# Finais de linha consistentes entre Linux, macOS e Windows.
+* text=auto eol=lf
+
+# Scripts de shell precisam de LF (o init do PostgreSQL roda dentro do container Linux).
+*.sh text eol=lf
+
+# Binários
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary

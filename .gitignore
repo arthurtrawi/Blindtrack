@@ -1,0 +1,44 @@
+# =============================================================
+# Raiz do monorepo BlindTrack.
+# Cada projeto (backend/, frontend/) tem o próprio .gitignore;
+# este arquivo é uma rede de segurança para o repositório inteiro.
+# =============================================================
+
+# Segredos — NUNCA versionar (em qualquer pasta)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependências, builds e relatórios
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Prisma Client gerado (backend: recriado por `npm ci`)
+backend/src/generated/
+
+# Documentos enviados pelos usuários (dados pessoais — LGPD)
+uploads/
+uploads-test/
+
+# Logs e temporários
+*.log
+npm-debug.log*
+.cache/
+tmp/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
