@@ -1,0 +1,40 @@
+# PostgreSQL 16 para desenvolvimento e testes do BlindTrack.
+# As variáveis vêm do arquivo .env (lido automaticamente pelo Docker Compose).
+name: blindada-veiculo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: blindada-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
+      # Banco separado para testes de integração (criado pelo script de init).
+      POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-blindtrack_test}
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      # Exposto somente em localhost: o banco não fica acessível pela rede.
+      - '127.0.0.1:${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - blindada-net
+
+volumes:
+  postgres_data:
+    name: blindada_postgres_data
+
+networks:
+  blindada-net:
+    name: blindada-net
+    driver: bridge

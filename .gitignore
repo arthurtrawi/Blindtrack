@@ -1,0 +1,26 @@
+# Dependências e build
+node_modules/
+dist/
+coverage/
+
+# Prisma Client gerado (recriado por `npm install` / `npm run db:generate`)
+src/generated/
+
+# Segredos — NUNCA versionar
+.env
+.env.*
+!.env.example
+
+# Arquivos enviados pelos usuários (podem conter dados pessoais — LGPD)
+uploads/
+
+# Logs e temporários
+*.log
+npm-debug.log*
+.DS_Store
+*.tsbuildinfo
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/

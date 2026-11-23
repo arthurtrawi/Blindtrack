@@ -1,0 +1,14 @@
+// =============================================================
+// BlindTrack — schema Prisma
+// Fase 2: só gerador e datasource. Os modelos entram na Fase 3.
+// =============================================================
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
