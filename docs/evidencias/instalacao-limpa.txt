@@ -1,0 +1,26 @@
+# Verificação de instalação limpa
+
+Data: 2026-11-23T08:20:58Z | Linux 7.0.0-44-generic | node v26.12.1 | npm 12.2.1 | PostgreSQL 16 (Docker)
+
+Procedimento: cópia apenas dos arquivos versionáveis (git ls-files + não ignorados) para uma pasta nova em disco,
+sem node_modules, sem .env e sem Prisma Client gerado; .env criado a partir do .env.example (segredos trocados);
+depois, os passos do README.
+
+| Passo | Resultado |
+| --- | --- |
+| Arquivos copiados | 141 (código, testes, docs, migrations, configs) |
+| npm ci | exit 0 (postinstall gerou o Prisma Client; bcrypt nativo carregado via allowScripts) |
+| npx tsc --noEmit | exit 0 |
+| npx eslint . | exit 0 |
+| npm run build | exit 0 |
+| npm run db:deploy | exit 0 |
+| vitest run (rodada 1) | 206 aprovados, 1 ignorado (207) — Duration  57.52s  |
+| vitest run (rodada 2) | 206 aprovados, 1 ignorado (207) — Duration  45.43s  |
+| vitest run (rodada 3) | 206 aprovados, 1 ignorado (207) — Duration  44.77s  |
+
+## Observação
+
+Uma primeira tentativa feita em /tmp (tmpfs, em RAM) teve 1 falha entre 206 testes, numa máquina sem swap e
+sob pressão de memória (o comando seguinte foi encerrado pelo sistema, código 137). A saída detalhada se perdeu
+com o processo, então o teste que falhou não foi identificado. Repetida em disco, a suíte passou 3 de 3 vezes.
+Recomendação: não executar a suíte em tmpfs em máquinas com pouca memória.

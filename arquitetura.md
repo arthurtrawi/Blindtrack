@@ -1,38 +1,44 @@
 # Arquitetura — BlindTrack
 
-> Status: **Fase 5 concluída** (API completa, documentada e revisada). Banco em [docs/modelagem/modelo-de-dados.md](docs/modelagem/modelo-de-dados.md); qualidade em [docs/qualidade/](docs/qualidade/). Este documento será revisado na Fase 6.
+> Versão final (Fase 6), revisada contra o código. Banco de dados em
+> [docs/modelagem/modelo-de-dados.md](docs/modelagem/modelo-de-dados.md), fluxos em
+> [docs/diagramas/diagramas-de-sequencia.md](docs/diagramas/diagramas-de-sequencia.md),
+> qualidade em [docs/qualidade/](docs/qualidade/).
 
 ## 1. Visão geral
 
-A API REST é um monólito modular em Node.js + Express + TypeScript, com persistência em
-PostgreSQL 16 via Prisma ORM. Ela atende dois "ambientes" lógicos, separados por rotas e
+A API REST é um **monólito modular** em Node.js + Express 5 + TypeScript, com persistência
+em PostgreSQL 16 via Prisma ORM 7. Ela atende dois "ambientes" lógicos, separados por rotas e
 perfis:
 
-- **Painel administrativo**: `/api/v1/*` para os perfis ADMIN, GESTOR, TECNICO e ATENDIMENTO.
-- **Portal do cliente**: `/api/v1/cliente/*`, só para o perfil CLIENTE, somente leitura.
+- **Painel administrativo:** `/api/v1/*` para os perfis ADMIN, GESTOR, TECNICO e ATENDIMENTO.
+- **Portal do cliente:** `/api/v1/cliente/*`, só para o perfil CLIENTE, somente leitura.
+
+O projeto entrega a **API**. Os frontends do painel e do portal estão fora do escopo; o
+Swagger UI serve como cliente interativo.
 
 ```mermaid
 flowchart TB
-    subgraph Clientes_HTTP[Consumidores]
-        P[Painel administrativo<br/>futuro frontend]
-        C[Portal do cliente<br/>futuro frontend]
-        S[Swagger UI /api/docs]
+    subgraph Consumidores
+        P[Painel administrativo<br/>frontend futuro]
+        C[Portal do cliente<br/>frontend futuro]
+        S[Swagger UI<br/>/api/v1/docs]
     end
 
-    subgraph API[Processo Node.js — Express]
+    subgraph API[Processo Node.js — Express 5]
         direction TB
-        MW[Middlewares globais<br/>requestId · pino-http · helmet · cors · json · rate limit]
+        MW[Middlewares globais<br/>request-logger: requestId + pino + máscara LGPD<br/>helmet · cors · json 1 MB]
         R[Routes /api/v1]
-        AM[authenticate · authorize perfis · validate Zod]
+        AM[Por rota: authenticate · authorize perfis · validate Zod<br/>rate limit só em /auth/login · upload multer só em documentos]
         CT[Controllers]
         SV[Services<br/>regras de negócio · transações]
-        DM[Domínio puro<br/>máquinas de estado · cálculo de prazos]
-        PR[Prisma Client]
+        DM[services/domain<br/>máquinas de estado · prazos · funções puras]
+        PR[Prisma Client 7 + adapter pg]
         EH[errorHandler global]
-        ST[Storage de arquivos<br/>disco local ./uploads]
+        ST[storage.service<br/>disco local UPLOAD_DIR]
     end
 
-    DB[(PostgreSQL 16<br/>Docker · volume nomeado)]
+    DB[(PostgreSQL 16<br/>Docker · volume nomeado<br/>CHECKs · triggers append-only)]
 
     P & C & S --> MW --> R --> AM --> CT --> SV
     SV --> DM
@@ -44,233 +50,263 @@ flowchart TB
 
 ## 2. Padrões arquiteturais
 
-| Padrão                       | Onde                                                                 | Por quê                                                                                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Arquitetura em camadas       | Routes → Middlewares → Controllers → Services → Prisma               | Exigência do projeto. Cada camada tem uma única responsabilidade e só depende da camada abaixo.                                                                     |
-| Monólito modular             | Um módulo de domínio por recurso (`ordem-servico.*`, `etapa.*` etc.) | Simples de implantar e testar num projeto acadêmico, com fronteiras claras para extrair serviços no futuro, se fizer sentido.                                       |
-| Máquina de estados explícita | `src/services/domain/*.state-machine.ts`                             | As transições de status (OS, etapa, ocorrência) são a regra de negócio central. Uma tabela de transições pura é testável sem banco e não se espalha pelos services. |
-| Unit of Work (transação)     | `prisma.$transaction(async (tx) => …)` nos services                  | Garante que alteração + histórico + auditoria sejam atômicos (RN29).                                                                                                |
-| Injeção de dependência leve  | Services recebem o client/`tx` do Prisma como parâmetro              | Permite reutilizar o mesmo service dentro de outra transação e facilita os testes. Sem container de DI, que seria excesso para o tamanho do projeto.                |
-| Erros de domínio tipados     | `AppError` (`NotFound`, `Conflict`, `BusinessRule`, `Forbidden`…)    | Os controllers não montam status HTTP à mão. O `errorHandler` traduz os erros num formato único (RNF16).                                                            |
-| DTOs validados               | Schemas Zod em `src/validators`                                      | Uma única fonte para validação em tempo de execução e para os tipos TypeScript (`z.infer`). Também alimenta o OpenAPI.                                              |
+| Padrão                       | Onde                                                                                   | Por quê                                                                                                                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arquitetura em camadas       | Routes → Middlewares → Controllers → Services → Prisma                                 | Exigência do projeto. Cada camada tem uma responsabilidade; as rotas nunca acessam o banco e os controllers não têm regra de negócio.                                                                   |
+| Monólito modular             | Um módulo por recurso (`ordem-servico.*`, `etapa.*`...)                                | Simples de implantar e testar, com fronteiras claras (ver abaixo).                                                                                                                                      |
+| Máquina de estados explícita | `src/services/domain/*.state-machine.ts`                                               | As transições de status (OS, etapa, ocorrência) são a regra central. Tabelas de transição puras são testáveis sem banco e não se espalham pelos services.                                               |
+| Unit of Work (transação)     | `prisma.$transaction(async (tx) => …)`                                                 | Alteração + histórico + auditoria são atômicos (RN29).                                                                                                                                                  |
+| Funções que aceitam o client | `registrarHistorico(db, …)`, `registrarAuditoria(db, …)`, `buscarOrdemOperavel(db, …)` | As operações reutilizadas recebem o client ou a transação por parâmetro e participam da transação de quem as chama. Os casos de uso usam o client global (sem container de DI, que seria excesso aqui). |
+| Erros de domínio tipados     | `AppError` (`NotFound`, `Conflict`, `BusinessRule`, `Forbidden`…)                      | Os controllers não montam status HTTP de erro. O `errorHandler` traduz tudo num formato único (RNF16).                                                                                                  |
+| Schemas como contrato        | Zod em `src/validators`                                                                | Uma fonte para validação em tempo de execução, tipos TypeScript (`z.infer`) e documentação OpenAPI (ADR-23).                                                                                            |
 
-### Sobre "monólito modular" × estrutura de pastas exigida
+### Fronteiras entre módulos
 
-O enunciado exige pastas **por camada** (`controllers/`, `services/`, `routes/`…). Para manter a
-modularidade sem fugir dessa estrutura, a modularidade fica na **nomenclatura e nas regras de
-dependência**:
+O enunciado exige pastas **por camada** (`controllers/`, `services/`...). A modularidade
+fica na **nomenclatura e nas regras de dependência**:
 
 - cada módulo tem `<modulo>.routes.ts`, `<modulo>.controller.ts`, `<modulo>.service.ts` e `<modulo>.schema.ts`;
-- um service **só chama outro service pela interface exportada**, nunca acessando as tabelas do outro módulo para escrever;
-- histórico e auditoria são serviços transversais (`historico.service.ts`, `auditoria.service.ts`) usados pelos demais.
+- **leituras** entre módulos são livres (ex.: o service de etapa lê ocorrências e documentos para aplicar RN12 e RN17);
+- **escritas** em tabelas de outro módulo passam por funções exportadas (`sincronizarStatusOrdem`, `replanejarEntrega`, `registrarHistorico`, `registrarAuditoria`), com três exceções deliberadas, todas na mesma transação:
+  1. abrir a OS cria as etapas como escrita aninhada (composição, RN04);
+  2. inativar o cliente desativa o usuário do portal (RN36);
+  3. `alteracoes_previsao` é gravada pelos services de OS e de etapa (replanejamento da entrega e da etapa).
+- histórico, auditoria e storage são serviços transversais.
 
 ## 3. Justificativas tecnológicas
 
-| Escolha                                       | Justificativa                                                                                                                                                                                                                                        |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Node.js 24 LTS** (compatível com 22 LTS)    | Linha LTS ativa, com suporte longo. Fixada em `.nvmrc` e `engines`.                                                                                                                                                                                  |
-| **Express 5**                                 | Estável e mais simples que alternativas opinativas. A v5 encaminha ao `errorHandler` as rejeições de handlers `async`, o que elimina wrappers `asyncHandler`.                                                                                        |
-| **TypeScript strict**                         | Tipagem explícita (requisito de qualidade). Os tipos do Prisma e do Zod fluem até os controllers.                                                                                                                                                    |
-| **PostgreSQL 16**                             | Integridade referencial forte, `timestamptz`, `uuid`, sequências, triggers (para o _append-only_) e `jsonb` (para a auditoria).                                                                                                                      |
-| **Prisma ORM (linha 7.x)**                    | Schema declarativo, migrations versionadas e um client tipado. A versão exata será fixada na Fase 2, depois de checar a compatibilidade com Node 22/24 e PG16. Na linha 7 o Prisma usa _driver adapter_ (`@prisma/adapter-pg`) e `prisma.config.ts`. |
-| **Zod**                                       | Validação declarativa com inferência de tipos. Reaproveitado no OpenAPI.                                                                                                                                                                             |
-| **jsonwebtoken + bcrypt**                     | Padrão de mercado. O bcrypt é lento por design, o que dificulta força bruta.                                                                                                                                                                         |
-| **Helmet / cors**                             | Cabeçalhos de segurança e controle de origens configurável via `.env`.                                                                                                                                                                               |
-| **Pino / pino-http**                          | Logs estruturados em JSON, rápidos, com `redact` para dados sensíveis (LGPD).                                                                                                                                                                        |
-| **Swagger UI + OpenAPI 3**                    | Documentação navegável e testável.                                                                                                                                                                                                                   |
-| **Vitest + Supertest**                        | O Vitest roda TypeScript sem configurar ts-jest e é rápido. O Supertest exercita o app Express sem abrir porta.                                                                                                                                      |
-| **tsx + nodemon**                             | O `tsx` executa TypeScript direto e o `nodemon` reinicia o servidor ao salvar.                                                                                                                                                                       |
-| **multer** _(extra, justificado)_             | Necessário para o upload `multipart/form-data` de documentos. O Express não trata isso nativamente.                                                                                                                                                  |
-| **express-rate-limit** _(extra, justificado)_ | Limita tentativas de login (RNF05), mitigando força bruta.                                                                                                                                                                                           |
-
-Fora da stack obrigatória, apenas `multer`, `express-rate-limit` e `@prisma/adapter-pg`
-(exigido pelo Prisma 7) são adicionados, todos justificados acima.
+| Escolha                                     | Justificativa                                                                                                                                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Node.js 24 LTS** (compatível com ≥ 22.13) | Linha LTS ativa. Fixada em `.nvmrc`; `engines` aceita 22.13+. Testado também no Node 26.                                                                                                                          |
+| **Express 5**                               | Estável e simples. A v5 encaminha ao `errorHandler` as rejeições de handlers `async`, o que elimina wrappers `asyncHandler`.                                                                                      |
+| **TypeScript 5.9 strict** (ESM, `NodeNext`) | Tipagem explícita; `any` proibido no lint. A 5.9 foi escolhida porque o `typescript-eslint` ainda não suporta o TypeScript 7.                                                                                     |
+| **PostgreSQL 16**                           | Integridade referencial, `timestamptz`, `uuid`, sequences, CHECKs, triggers (append-only) e `jsonb` (auditoria).                                                                                                  |
+| **Prisma ORM 7.10.1**                       | Schema declarativo, migrations versionadas, client tipado. Última versão estável (a tag `latest` do npm apontava para um release candidate da 8). Usa driver adapter (`@prisma/adapter-pg`) e `prisma.config.ts`. |
+| **Zod 4**                                   | Validação declarativa com inferência de tipos e geração de JSON Schema para o OpenAPI.                                                                                                                            |
+| **jsonwebtoken + bcrypt**                   | Padrão de mercado. HS256 com algoritmo fixado; bcrypt com custo 12.                                                                                                                                               |
+| **Helmet / cors**                           | Cabeçalhos de segurança e lista de origens configurável no `.env`.                                                                                                                                                |
+| **Pino / pino-http**                        | Logs estruturados em JSON, com `redact` de campos sensíveis e máscara de parâmetros de busca (ADR-24).                                                                                                            |
+| **Swagger UI + OpenAPI 3.0**                | Documentação navegável, gerada dos schemas e testada contra as rotas.                                                                                                                                             |
+| **Vitest + Supertest**                      | O Vitest roda TypeScript/ESM sem configuração extra; o Supertest exercita o app sem abrir porta.                                                                                                                  |
+| **tsx + nodemon**                           | Execução direta de TypeScript e recarga ao salvar.                                                                                                                                                                |
+| **multer** _(extra)_                        | Upload `multipart/form-data`; o Express não o trata nativamente.                                                                                                                                                  |
+| **express-rate-limit** _(extra)_            | Limite de tentativas de login falhas (RNF05).                                                                                                                                                                     |
+| **@prisma/adapter-pg + pg** _(extra)_       | Exigidos pelo Prisma 7 para conectar ao PostgreSQL.                                                                                                                                                               |
 
 ## 4. Estrutura de pastas
 
 ```
-meu-projeto/
+Blindada-veiculo/
 ├── docs/
-│   ├── requisitos/            # visão, RF, RNF, regras de negócio
-│   ├── diagramas/             # arquitetura, sequência, classes (Mermaid)
-│   ├── casos-de-uso/          # diagrama e especificação dos casos de uso
-│   ├── modelagem/             # DER, dicionário de dados
-│   └── api/                   # openapi.yaml, exemplos de requisição
-├── kanban-prints/             # evidências do quadro de tarefas
+│   ├── README.md              # índice da documentação
+│   ├── requisitos/            # visão geral, RF, RNF, regras de negócio
+│   ├── casos-de-uso/          # diagrama e especificações
+│   ├── modelagem/             # DER, decisões, restrições, índices
+│   ├── diagramas/             # classes, sequência (Mermaid)
+│   ├── api/                   # openapi.json (gerado)
+│   ├── qualidade/             # plano de testes, revisão de segurança
+│   └── evidencias/            # saídas reais de testes, cobertura, audit, instalação limpa
+├── kanban-prints/             # capturas do quadro de tarefas (preenchidas pelo desenvolvedor)
 ├── prisma/
 │   ├── schema.prisma
-│   ├── migrations/            # geradas pelo `prisma migrate dev` (nunca à mão, salvo SQL extra)
+│   ├── migrations/            # geradas pelo Prisma + SQL manual documentado
 │   └── seed.ts
 ├── src/
-│   ├── config/                # env.ts (validação do .env com Zod), logger.ts, prisma.ts, swagger.ts
+│   ├── config/                # env (Zod), logger, prisma, swagger (OpenAPI)
 │   ├── controllers/           # <modulo>.controller.ts
-│   ├── services/              # <modulo>.service.ts
-│   │   └── domain/            # máquinas de estado e cálculo de prazos (funções puras)
+│   ├── services/              # <modulo>.service.ts, historico, auditoria, storage
+│   │   └── domain/            # máquinas de estado, prazos, constantes (funções puras)
 │   ├── routes/                # <modulo>.routes.ts + index.ts (monta /api/v1)
-│   ├── middlewares/           # authenticate, authorize, validate, upload, error-handler, not-found
-│   ├── validators/            # <modulo>.schema.ts (Zod)
-│   ├── utils/                 # app-error.ts, paginacao.ts, cpf-cnpj.ts, placa-chassi.ts
-│   ├── types/                 # express.d.ts (req.user), tipos compartilhados
-│   ├── generated/prisma/      # (gitignored) Prisma Client gerado
+│   ├── middlewares/           # authenticate, authorize, validate, upload, rate-limit,
+│   │                          # request-logger, error-handler, not-found
+│   ├── validators/            # <modulo>.schema.ts (Zod) + comum.schema.ts
+│   ├── utils/                 # app-error, documento (CPF/CNPJ), veiculo-identificacao,
+│   │                          # paginacao, json, download, contexto-requisicao
+│   ├── types/                 # auth.ts, express.d.ts (req.user)
+│   ├── generated/prisma/      # (fora do git) Prisma Client gerado
 │   ├── app.ts                 # cria e configura o Express (sem listen, para os testes)
-│   └── server.ts              # carrega env, conecta ao banco, listen, shutdown gracioso
-├── scripts/                   # gerar-openapi.ts (exporta docs/api/openapi.json)
+│   └── server.ts              # conecta ao banco, listen, encerramento gracioso
+├── scripts/                   # gerar-openapi.ts
 ├── tests/
-│   ├── unit/                  # máquinas de estado, prazos, validadores, services com tx mockado
-│   └── integration/           # Supertest + PostgreSQL real (banco blindtrack_test)
-├── docker/postgres/init/      # script que cria o banco de testes na 1ª subida do container
-├── uploads/                   # (gitignored) arquivos enviados
-├── .env / .env.example / .gitignore / .nvmrc
-├── arquitetura.md / README.md / DOCUMENTACAO_IA.md
+│   ├── unit/                  # domínio, validadores, segurança, error handler (sem banco)
+│   ├── integration/           # Supertest + PostgreSQL real (banco blindtrack_test)
+│   ├── helpers/               # fábrica de dados, limpeza do banco
+│   └── setup/                 # globalSetup: migrations no banco de teste, limpeza de uploads
+├── docker/postgres/init/      # cria o banco de testes na 1ª subida do container
+├── uploads/, uploads-test/    # (fora do git) arquivos enviados
+├── .env.example, .gitignore, .nvmrc, .prettierrc.json, eslint.config.js
+├── arquitetura.md, README.md, DOCUMENTACAO_IA.md
 ├── docker-compose.yml
-├── package.json / tsconfig.json / vitest.config.ts / prisma.config.ts
+└── package.json, tsconfig.json, tsconfig.build.json, vitest.config.ts, nodemon.json, prisma.config.ts
 ```
 
 ## 5. Fluxo de uma requisição
 
-Exemplo: técnico conclui uma etapa.
+Exemplo: o técnico conclui uma etapa. Outros fluxos estão em
+[diagramas-de-sequencia.md](docs/diagramas/diagramas-de-sequencia.md).
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor T as Técnico
+    participant L as request-logger
     participant R as etapa.routes
-    participant MW as authenticate / authorize / validate
+    participant MW as authenticate → authorize → validate
     participant C as etapa.controller
     participant S as etapa.service
     participant D as etapa.state-machine
     participant DB as Prisma ($transaction)
+    participant EH as errorHandler
 
-    T->>R: PATCH /api/v1/etapas/:id/status {acao:"CONCLUIR"}
-    R->>MW: verifica JWT, perfil, schema Zod
-    MW->>C: req.user + body validado
-    C->>S: alterarStatus(id, dto, usuario)
-    S->>DB: begin; busca etapa + OS + etapas anteriores + ocorrências impeditivas
-    S->>D: validarTransicao(EM_ANDAMENTO → CONCLUIDA, contexto)
-    D-->>S: ok / BusinessRuleError
-    S->>DB: UPDATE etapa SET status=CONCLUIDA, dataConclusao=now() WHERE id=? AND status=EM_ANDAMENTO
-    S->>DB: INSERT historico_status; INSERT auditoria
-    S->>DB: recalcula status da OS (ex.: PRONTA_PARA_ENTREGA) + histórico
-    S->>DB: commit
-    S-->>C: etapa atualizada
-    C-->>T: 200 OK {data: etapa}
+    T->>L: PATCH /api/v1/etapas/:id/status {acao:"CONCLUIR"}
+    L->>R: requestId + log (CPF/e-mail mascarados)
+    R->>MW: JWT válido? usuário ativo? perfil permitido? corpo válido?
+    MW->>C: req.user + corpo validado
+    C->>S: alterarStatusEtapa(id, dados, contexto)
+    S->>DB: begin; etapa, OS, etapas da OS, ocorrências impeditivas
+    S->>D: validarTransicaoEtapa(CONCLUIR, contexto)
+    alt regra violada
+        D-->>S: BusinessRuleError (ex.: RN12)
+        S-->>EH: rollback
+        EH-->>T: 422 {error: {code: "RN12", message, requestId}}
+    else ok
+        S->>DB: UPDATE etapa ... WHERE status = EM_ANDAMENTO (0 linhas → 409)
+        S->>DB: INSERT historico_status; INSERT auditoria
+        S->>DB: recalcula o status da OS (+ histórico)
+        S->>DB: commit
+        S-->>C: etapa + statusOrdem
+        C-->>T: 200 {data}
+    end
 ```
 
-## 6. Decisões arquiteturais (ADR resumidas)
+## 6. Decisões arquiteturais (ADRs)
 
-| #      | Decisão                                                                                                                                                          | Alternativas consideradas                         | Motivo                                                                                                                                                                                                      |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ADR-01 | Etapas geradas a partir de uma tabela **`ModeloEtapa`** (seed com as 8 etapas).                                                                                  | Enum fixo de etapas.                              | O enunciado pede etapas "configuráveis". Com o modelo, é possível adicionar/reordenar etapas sem migration. A OS guarda uma cópia (nome, ordem, obrigatória), então mudar o modelo não reescreve o passado. |
-| ADR-02 | Nova entidade **`AlteracaoPrevisao`**.                                                                                                                           | Guardar justificativas no histórico como texto.   | RN26 pede prazo planejado × real e justificativa estruturada. Uma tabela própria permite relatórios de desvio.                                                                                              |
-| ADR-03 | `HistoricoStatus` com `tipoEvento` (enum) e `statusAnterior`/`statusNovo` em texto.                                                                              | Uma tabela de histórico por entidade.             | Uma tabela única facilita a linha do tempo. A consistência dos valores é garantida pelos services, que só gravam valores vindos dos enums.                                                                  |
-| ADR-04 | _Append-only_ garantido **também no banco** (trigger que rejeita `UPDATE`/`DELETE` em `historico_status` e `auditoria`, criado numa migration SQL complementar). | Só na aplicação.                                  | Defesa em profundidade: nem um bug nem um acesso direto ao banco apagam a trilha.                                                                                                                           |
-| ADR-05 | Atraso **calculado na consulta**, sem job agendado.                                                                                                              | Cron que marca `atrasada = true`.                 | Evita dado desatualizado e infraestrutura extra. O filtro `?atrasada=true` vira uma condição SQL indexável.                                                                                                 |
-| ADR-06 | Usuário CLIENTE = `Usuario` com `perfil = CLIENTE` e `clienteId` preenchido.                                                                                     | Tabela de login separada para clientes.           | Um único mecanismo de autenticação. A autorização por propriedade se resume a comparar `req.user.clienteId`.                                                                                                |
-| ADR-07 | Acesso negado a recurso de outro cliente retorna **404**.                                                                                                        | 403.                                              | Não revelar a existência de OS de terceiros (LGPD / enumeração).                                                                                                                                            |
-| ADR-08 | Soft delete **só** em `Cliente` (`deletedAt`). `Usuario` usa `ativo`. Nada é excluído em OS, etapa, histórico, ocorrência, documento ou auditoria.               | Soft delete em tudo.                              | Soft delete onde não há exclusão de negócio só aumenta a complexidade das consultas.                                                                                                                        |
-| ADR-09 | Número da OS a partir de uma `SEQUENCE` do PostgreSQL.                                                                                                           | `MAX(numero)+1`.                                  | `MAX+1` gera duplicidade com requisições concorrentes. A sequence é atômica.                                                                                                                                |
-| ADR-10 | Controle de concorrência por **atualização condicional** (`updateMany where status = esperado`, conferindo `count`).                                             | `SELECT … FOR UPDATE` / nível Serializable.       | É suficiente para as transições de status e não exige SQL bruto nem retentativas.                                                                                                                           |
-| ADR-11 | Apenas _access token_ JWT (expiração padrão de 8 h, configurável).                                                                                               | Access + refresh token.                           | Escopo acadêmico. O refresh token com rotação fica documentado como evolução.                                                                                                                               |
-| ADR-12 | Arquivos em disco local por trás de uma interface `StorageService`.                                                                                              | S3/MinIO já na primeira versão.                   | Simplicidade. A interface permite trocar o armazenamento sem mexer nos services.                                                                                                                            |
-| ADR-13 | Testes de integração contra um **PostgreSQL real** (banco `blindtrack_test` no mesmo container), limpo entre suítes.                                             | SQLite / banco em memória.                        | Proibido pelo enunciado. Além disso, só o PostgreSQL real exercita triggers, sequences e `timestamptz`.                                                                                                     |
-| ADR-14 | Prefixo **`/api/v1`**. Os caminhos do enunciado são mantidos depois do prefixo (ex.: `/api/v1/ordens-servico`).                                                  | `/api` sem versão.                                | O enunciado pede versionamento "quando adequado". Uma API pública com portal de cliente tende a evoluir.                                                                                                    |
-| ADR-15 | `authenticate` **recarrega o usuário do banco** a cada requisição.                                                                                               | Confiar só no conteúdo do JWT.                    | Desativação e mudança de perfil valem na hora, sem esperar o token de 8 h expirar (ADR-11 não tem revogação). O custo é uma consulta por chave primária.                                                    |
-| ADR-16 | Projeção por perfil nos services: o TECNICO recebe cliente com documento mascarado e sem contato/endereço.                                                       | Mesmo payload para todos.                         | Minimização (LGPD): o técnico não precisa desses dados para executar a blindagem.                                                                                                                           |
-| ADR-17 | Validação no middleware `validate`, que substitui `req.body/params/query` pelos valores normalizados. Os schemas são `strict`.                                   | Validar dentro de cada controller.                | Um ponto único de validação. Campos extras são rejeitados (proteção contra mass assignment).                                                                                                                |
-| ADR-18 | CNPJ alfanumérico aceito (validador + CHECK ajustado na migration `cnpj_alfanumerico`).                                                                          | Só CNPJ numérico.                                 | Exigência legal vigente desde julho/2026. Sem isso, empresas novas não poderiam ser cadastradas.                                                                                                            |
-| ADR-19 | Linha do tempo do portal com **mensagens padronizadas**, geradas a partir de tipo e status do evento.                                                            | Exibir a `descricao` do histórico.                | A descrição interna pode conter justificativas e nomes. O cliente vê só textos pensados para ele (`descricaoCliente` nas ocorrências).                                                                      |
-| ADR-20 | Máquinas de estado e prazos como **funções puras** em `services/domain`.                                                                                         | Regras espalhadas nos services.                   | Testáveis sem banco (61 testes unitários) e reaproveitadas por vários services.                                                                                                                             |
-| ADR-21 | Upload em memória, com o tipo validado pela **assinatura binária** antes de gravar em disco, nome gerado (UUID) e hash SHA-256.                                  | Confiar na extensão ou no MIME declarado.         | Impede arquivo disfarçado (ex.: HTML com extensão .pdf) e path traversal. O hash permite verificar a integridade.                                                                                           |
-| ADR-22 | Transações interativas do Prisma com `maxWait` 10 s / `timeout` 20 s.                                                                                            | Padrão do Prisma (2 s / 5 s).                     | Abrir uma OS grava OS + 8 etapas + histórico + auditoria. Em máquinas lentas, 5 s não bastava. Os limites continuam finitos.                                                                                |
-| ADR-23 | OpenAPI **gerado dos schemas Zod** (`z.toJSONSchema`), com metadados por operação em `config/swagger.ts`.                                                        | Escrever o YAML à mão; anotações JSDoc.           | Validação e documentação têm a mesma fonte e não divergem. Um teste de contrato confere que cada operação existe e respeita os perfis documentados.                                                         |
-| ADR-24 | **Máscara de parâmetros sensíveis** na URL e na query dos logs HTTP.                                                                                             | Confiar só no `redact` (que não reescreve a URL). | A busca por CPF gravava o CPF no log (achado S1 da revisão de segurança).                                                                                                                                   |
-| ADR-25 | **Revogação de sessão na troca de senha** (`senha_alterada_em` × `iat` do JWT).                                                                                  | Lista de tokens revogados; refresh token.         | Aproveita a consulta que o `authenticate` já faz por requisição (ADR-15): não precisa de store extra (achado S2).                                                                                           |
+| #      | Decisão                                                                                                                            | Alternativas                           | Motivo                                                                           |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------- |
+| ADR-01 | Etapas geradas de uma tabela **`ModeloEtapa`**; a OS guarda uma cópia.                                                             | Enum fixo de etapas.                   | Etapas "configuráveis" sem migration, e mudar o modelo não reescreve o passado.  |
+| ADR-02 | Entidade **`AlteracaoPrevisao`**.                                                                                                  | Justificativa como texto no histórico. | Prazo planejado × real e justificativa estruturada (RN26).                       |
+| ADR-03 | `HistoricoStatus` único, com `tipoEvento` e status em texto.                                                                       | Uma tabela por entidade.               | Facilita a linha do tempo; os valores sempre vêm dos enums.                      |
+| ADR-04 | _Append-only_ **também no banco**: triggers rejeitam `UPDATE`/`DELETE` em `historico_status`, `auditoria` e `alteracoes_previsao`. | Só na aplicação.                       | Defesa em profundidade: nem bug nem acesso direto apagam a trilha.               |
+| ADR-05 | Atraso **calculado na consulta**.                                                                                                  | Job que marca `atrasada`.              | Sem dado desatualizado nem infraestrutura extra.                                 |
+| ADR-06 | Usuário CLIENTE = `Usuario` com `clienteId`.                                                                                       | Login separado para clientes.          | Um só mecanismo de autenticação.                                                 |
+| ADR-07 | Recurso de outro cliente responde **404**.                                                                                         | 403.                                   | Não revelar a existência de OS de terceiros.                                     |
+| ADR-08 | Soft delete só em `Cliente`; `Usuario` usa `ativo`; nada mais é excluído.                                                          | Soft delete em tudo.                   | Só onde há exclusão de negócio.                                                  |
+| ADR-09 | Número da OS por `SEQUENCE`.                                                                                                       | `MAX(numero)+1`.                       | Atômico sob concorrência.                                                        |
+| ADR-10 | Concorrência por **atualização condicional** (`WHERE status = esperado`).                                                          | `SELECT … FOR UPDATE`.                 | Suficiente para transições de status, sem SQL bruto.                             |
+| ADR-11 | Só _access token_ JWT (8 h).                                                                                                       | Access + refresh token.                | Escopo acadêmico; mitigado pela ADR-15 e pela ADR-25.                            |
+| ADR-12 | Arquivos em disco local atrás do `storage.service`.                                                                                | S3/MinIO.                              | Simplicidade; trocável sem mexer nos demais services.                            |
+| ADR-13 | Testes contra **PostgreSQL real** (`blindtrack_test`).                                                                             | SQLite / memória.                      | Proibido pelo enunciado; só o banco real exercita triggers e índices parciais.   |
+| ADR-14 | Prefixo **`/api/v1`**.                                                                                                             | `/api`.                                | Versionamento para evolução da API.                                              |
+| ADR-15 | `authenticate` **recarrega o usuário** a cada requisição.                                                                          | Confiar só no JWT.                     | Desativação e mudança de perfil valem na hora.                                   |
+| ADR-16 | Projeção por perfil: TECNICO recebe cliente com documento mascarado.                                                               | Mesmo payload para todos.              | Minimização de dados (LGPD).                                                     |
+| ADR-17 | Middleware `validate` substitui `body`/`params`/`query` pelos valores normalizados; schemas `strict`.                              | Validar no controller.                 | Ponto único de validação; proteção contra mass assignment.                       |
+| ADR-18 | CNPJ alfanumérico aceito.                                                                                                          | Só numérico.                           | Exigência legal vigente desde julho/2026.                                        |
+| ADR-19 | Linha do tempo do portal com **mensagens padronizadas**.                                                                           | Exibir a descrição interna.            | A descrição interna pode conter justificativas e nomes.                          |
+| ADR-20 | Regras de estado e prazo como **funções puras** em `services/domain`.                                                              | Regras espalhadas nos services.        | Testáveis sem banco (`tests/unit/dominio.test.ts`) e reutilizadas.               |
+| ADR-21 | Upload validado pela **assinatura binária**, nome UUID, hash SHA-256.                                                              | Confiar na extensão/MIME.              | Impede arquivo disfarçado e path traversal.                                      |
+| ADR-22 | Transações com `maxWait` 10 s / `timeout` 20 s.                                                                                    | Padrão (2 s / 5 s).                    | Abrir uma OS grava várias tabelas; em máquinas lentas 5 s não bastava.           |
+| ADR-23 | OpenAPI **gerado dos schemas Zod**.                                                                                                | YAML manual; JSDoc.                    | Validação e documentação não divergem; teste de contrato confere rotas e perfis. |
+| ADR-24 | **Máscara de parâmetros de busca** (CPF, e-mail, nome, placa...) nos logs HTTP.                                                    | Só `redact`.                           | A busca por CPF gravava o CPF no log (achado S1).                                |
+| ADR-25 | **Revogação de sessão na troca de senha** (`senha_alterada_em` × `iat`).                                                           | Lista de tokens revogados.             | Aproveita a consulta da ADR-15, sem store extra (achado S2).                     |
 
-## 7. Matriz de permissões (resumo)
+## 7. Matriz de permissões
 
-| Recurso / ação                     | ADMIN | GESTOR |       TECNICO       |     ATENDIMENTO     |       CLIENTE       |
-| ---------------------------------- | :---: | :----: | :-----------------: | :-----------------: | :-----------------: |
-| Usuários (CRUD)                    |  ✅   |   —    |          —          |          —          |          —          |
-| Clientes: criar / editar           |  ✅   |   ✅   |          —          |         ✅          |          —          |
-| Clientes: inativar                 |  ✅   |   ✅   |          —          |          —          |          —          |
-| Veículos: criar / editar           |  ✅   |   ✅   |          —          |         ✅          |          —          |
-| Veículos / clientes: consultar     |  ✅   |   ✅   |          👁          |         ✅          |          —          |
-| OS: abrir / editar observações     |  ✅   |   ✅   |          —          |         ✅          |          —          |
-| OS: suspender / cancelar           |  ✅   |   ✅   |          —          |          —          |          —          |
-| OS: consultar                      |  ✅   |   ✅   |         ✅          |         ✅          |          —          |
-| Etapa: alterar status              |  ✅   |   ✅   | ✅ (só as próprias) |          —          |          —          |
-| Etapa: responsável / prazo         |  ✅   |   ✅   |          —          |          —          |          —          |
-| Modelo de etapas                   |  ✅   |   ✅   |          —          |          —          |          —          |
-| Ocorrência: abrir                  |  ✅   |   ✅   |         ✅          |         ✅          |          —          |
-| Ocorrência: resolver / cancelar    |  ✅   |   ✅   | ✅ (se responsável) | ✅ (se responsável) |          —          |
-| Documento: enviar                  |  ✅   |   ✅   |         ✅          |         ✅          |          —          |
-| Documento: aprovar / rejeitar      |  ✅   |   ✅   |          —          |          —          |          —          |
-| Histórico / linha do tempo         |  ✅   |   ✅   |         ✅          |         ✅          |          —          |
-| Auditoria                          |  ✅   |   —    |          —          |          —          |          —          |
-| Portal: minhas ordens / acompanhar |   —   |   —    |          —          |          —          | ✅ (só as próprias) |
+Verificada automaticamente para as 42 operações e os 5 perfis em
+[`tests/integration/openapi.test.ts`](tests/integration/openapi.test.ts).
 
-👁 = somente leitura.
+| Recurso / ação                                          | ADMIN | GESTOR |       TECNICO       |     ATENDIMENTO     |       CLIENTE       |
+| ------------------------------------------------------- | :---: | :----: | :-----------------: | :-----------------: | :-----------------: |
+| Usuários: criar, consultar, editar, desativar           |  ✅   |   —    |          —          |          —          |          —          |
+| Clientes: criar / editar                                |  ✅   |   ✅   |          —          |         ✅          |          —          |
+| Clientes: corrigir CPF/CNPJ, inativar                   |  ✅   |   ✅   |          —          |          —          |          —          |
+| Clientes / veículos: consultar                          |  ✅   |   ✅   |          👁          |         ✅          |          —          |
+| Veículos: criar / editar                                |  ✅   |   ✅   |          —          |         ✅          |          —          |
+| OS: abrir / editar observações                          |  ✅   |   ✅   |          —          |         ✅          |          —          |
+| OS: suspender, retomar, cancelar, replanejar            |  ✅   |   ✅   |          —          |          —          |          —          |
+| OS, etapas, histórico, linha do tempo: consultar        |  ✅   |   ✅   |         ✅          |         ✅          |          —          |
+| Etapa: alterar status                                   |  ✅   |   ✅   | ✅ (só as próprias) |          —          |          —          |
+| Etapa: dispensar / reabrir                              |  ✅   |   ✅   |          —          |          —          |          —          |
+| Etapa: responsável / prazo                              |  ✅   |   ✅   |          —          |          —          |          —          |
+| Modelo de etapas                                        |  ✅   |   ✅   |          —          |          —          |          —          |
+| Ocorrência: abrir                                       |  ✅   |   ✅   |         ✅          |         ✅          |          —          |
+| Ocorrência: alterar, resolver, cancelar                 |  ✅   |   ✅   | ✅ (se responsável) | ✅ (se responsável) |          —          |
+| Documento: enviar, listar, baixar                       |  ✅   |   ✅   |         ✅          |         ✅          |          —          |
+| Documento: aprovar / rejeitar                           |  ✅   |   ✅   |          —          |          —          |          —          |
+| Portal: minhas OS, acompanhar, baixar documento visível |   —   |   —    |          —          |          —          | ✅ (só as próprias) |
+
+👁 = somente leitura, com dados reduzidos (ADR-16).
 
 ## 8. Mapa da API (`/api/v1`)
 
-| Método           | Rota                                 | Observação                                                                       |
-| ---------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
-| POST             | `/auth/login`                        | Público, com limite de tentativas falhas por IP                                  |
-| PATCH            | `/auth/senha`                        | _(extra, RF05)_ troca da própria senha                                           |
-| GET              | `/auth/me`                           |                                                                                  |
-| POST/GET         | `/usuarios`                          |                                                                                  |
-| GET/PATCH        | `/usuarios/:id`                      | Desativar = `PATCH {ativo:false}`                                                |
-| POST/GET         | `/clientes`                          | `?nome&documento&page&pageSize`                                                  |
-| GET/PATCH/DELETE | `/clientes/:id`                      | `DELETE` = inativação lógica                                                     |
-| POST/GET         | `/veiculos`                          | `?placa&chassi&clienteId`                                                        |
-| GET/PATCH        | `/veiculos/:id`                      |                                                                                  |
-| POST/GET         | `/ordens-servico`                    | `?status&clienteId&placa&atrasada&dataInicio&dataFim`                            |
-| GET/PATCH        | `/ordens-servico/:id`                |                                                                                  |
-| PATCH            | `/ordens-servico/:id/status`         | `{acao: SUSPENDER\|RETOMAR\|CANCELAR, justificativa}`                            |
-| PATCH            | `/ordens-servico/:id/previsao`       | _(extra)_ replanejamento da entrega com justificativa                            |
-| GET              | `/ordens-servico/:id/etapas`         |                                                                                  |
-| PATCH            | `/etapas/:id/status`                 | `{acao: INICIAR\|PAUSAR\|RETOMAR\|CONCLUIR\|DISPENSAR\|REABRIR, justificativa?}` |
-| PATCH            | `/etapas/:id/responsavel`            |                                                                                  |
-| PATCH            | `/etapas/:id/prazo`                  |                                                                                  |
-| GET              | `/ordens-servico/:id/historico`      |                                                                                  |
-| GET              | `/ordens-servico/:id/linha-do-tempo` |                                                                                  |
-| POST/GET         | `/ordens-servico/:id/ocorrencias`    |                                                                                  |
-| PATCH            | `/ocorrencias/:id`                   | inclui as transições de status                                                   |
-| POST/GET         | `/ordens-servico/:id/documentos`     | `multipart/form-data`                                                            |
-| GET              | `/documentos/:id/arquivo`            | _(extra)_ download                                                               |
-| PATCH            | `/documentos/:id/status`             | _(extra)_ aprovar/rejeitar                                                       |
-| GET/POST/PATCH   | `/modelos-etapa`                     | _(extra)_ configuração das etapas                                                |
-| GET              | `/cliente/minhas-ordens`             | Portal                                                                           |
-| GET              | `/cliente/ordens/:id/acompanhar`     | Portal                                                                           |
-| GET              | `/cliente/documentos/:id/arquivo`    | _(extra)_ portal: download de documento visível da própria OS                    |
-| GET              | `/docs`                              | Swagger UI                                                                       |
-| GET              | `/health`                            | Checa API + banco                                                                |
+| Método           | Rota                                   | Observação                                                                       |
+| ---------------- | -------------------------------------- | -------------------------------------------------------------------------------- |
+| GET              | `/health`                              | Público; checa API e banco                                                       |
+| GET              | `/docs`                                | Swagger UI                                                                       |
+| POST             | `/auth/login`                          | Público; limite de tentativas falhas por IP                                      |
+| GET              | `/auth/me`                             |                                                                                  |
+| PATCH            | `/auth/senha`                          | _(extra, RF05)_ troca da própria senha; revoga sessões anteriores                |
+| POST/GET         | `/usuarios`                            | `?perfil&ativo&busca&page&pageSize`                                              |
+| GET/PATCH        | `/usuarios/:id`                        | Desativar = `PATCH {ativo:false}`                                                |
+| POST/GET         | `/clientes`                            | `?nome&documento&email&tipoPessoa&incluirInativos&page&pageSize`                 |
+| GET/PATCH/DELETE | `/clientes/:id`                        | `DELETE` = inativação lógica                                                     |
+| POST/GET         | `/veiculos`                            | `?placa&chassi&clienteId&busca`                                                  |
+| GET/PATCH        | `/veiculos/:id`                        |                                                                                  |
+| POST/GET         | `/ordens-servico`                      | `?status&clienteId&veiculoId&placa&numero&atrasada&entradaDe&entradaAte`         |
+| GET/PATCH        | `/ordens-servico/:id`                  | PATCH: observações                                                               |
+| PATCH            | `/ordens-servico/:id/status`           | `{acao: SUSPENDER\|RETOMAR\|CANCELAR, justificativa}`                            |
+| PATCH            | `/ordens-servico/:id/previsao`         | _(extra)_ replanejamento com justificativa                                       |
+| GET              | `/ordens-servico/:id/etapas`           | Com indicador de prazo                                                           |
+| PATCH            | `/etapas/:id/status`                   | `{acao: INICIAR\|PAUSAR\|RETOMAR\|CONCLUIR\|DISPENSAR\|REABRIR, justificativa?}` |
+| PATCH            | `/etapas/:id/responsavel`              |                                                                                  |
+| PATCH            | `/etapas/:id/prazo`                    |                                                                                  |
+| GET              | `/ordens-servico/:id/historico`        |                                                                                  |
+| GET              | `/ordens-servico/:id/linha-do-tempo`   | Histórico + replanejamentos                                                      |
+| POST/GET         | `/ordens-servico/:id/ocorrencias`      | GET: `?status&tipo&prioridade`                                                   |
+| PATCH            | `/ocorrencias/:id`                     | Inclui as transições de status                                                   |
+| POST/GET         | `/ordens-servico/:id/documentos`       | POST: `multipart/form-data`                                                      |
+| GET              | `/documentos/:id/arquivo`              | _(extra)_ download                                                               |
+| PATCH            | `/documentos/:id/status`               | _(extra)_ aprovar/rejeitar                                                       |
+| GET/POST, PATCH  | `/modelos-etapa`, `/modelos-etapa/:id` | _(extra)_ configuração das etapas (RF23)                                         |
+| GET              | `/cliente/minhas-ordens`               | Portal                                                                           |
+| GET              | `/cliente/ordens/:id/acompanhar`       | Portal                                                                           |
+| GET              | `/cliente/documentos/:id/arquivo`      | _(extra)_ portal: documento visível da própria OS                                |
 
-Endpoints marcados _(extra)_ não constam no enunciado, mas são necessários para cumprir as regras RN13, RN17, RN26 e RF23.
+Os endpoints _(extra)_ não constam no enunciado, mas são necessários para cumprir RF05,
+RF23, RN13, RN17 e RN26.
 
-## 9. Entidades (antecipação da Fase 3)
+## 9. Entidades
 
 Entidades do enunciado: `Cliente`, `Veiculo`, `Usuario`, `OrdemServico`, `EtapaProcesso`,
-`HistoricoStatus`, `Ocorrencia`, `Documento`, `Auditoria`.
-Adicionadas: `ModeloEtapa` (ADR-01) e `AlteracaoPrevisao` (ADR-02).
+`HistoricoStatus`, `Ocorrencia`, `Documento`, `Auditoria`. Adicionadas: `ModeloEtapa`
+(ADR-01) e `AlteracaoPrevisao` (ADR-02).
 
 ```mermaid
 erDiagram
     CLIENTE ||--o{ VEICULO : possui
     CLIENTE ||--o{ ORDEM_SERVICO : solicita
-    CLIENTE ||--o| USUARIO : "acesso ao portal"
+    CLIENTE |o--o| USUARIO : "acesso ao portal"
     VEICULO ||--o{ ORDEM_SERVICO : recebe
     ORDEM_SERVICO ||--|{ ETAPA_PROCESSO : contem
-    MODELO_ETAPA ||--o{ ETAPA_PROCESSO : origina
-    USUARIO ||--o{ ETAPA_PROCESSO : "responsável"
+    MODELO_ETAPA |o--o{ ETAPA_PROCESSO : origina
+    USUARIO |o--o{ ETAPA_PROCESSO : "responsável"
     ORDEM_SERVICO ||--o{ HISTORICO_STATUS : registra
-    ETAPA_PROCESSO ||--o{ HISTORICO_STATUS : registra
     ORDEM_SERVICO ||--o{ OCORRENCIA : possui
-    ETAPA_PROCESSO ||--o{ OCORRENCIA : "pode afetar"
     ORDEM_SERVICO ||--o{ DOCUMENTO : anexa
     ORDEM_SERVICO ||--o{ ALTERACAO_PREVISAO : replaneja
-    ETAPA_PROCESSO ||--o{ ALTERACAO_PREVISAO : replaneja
-    USUARIO ||--o{ AUDITORIA : executa
+    USUARIO |o--o{ AUDITORIA : executa
 ```
 
-O detalhamento de campos, índices, CHECKs e triggers está em [docs/modelagem/modelo-de-dados.md](docs/modelagem/modelo-de-dados.md). O diagrama de classes está em [docs/diagramas/diagrama-de-classes.md](docs/diagramas/diagrama-de-classes.md).
+Campos, índices, CHECKs e triggers: [modelo-de-dados.md](docs/modelagem/modelo-de-dados.md).
+Classes de domínio: [diagrama-de-classes.md](docs/diagramas/diagrama-de-classes.md).
+
+## 10. Requisitos não implementados
+
+| Requisito                                               | Prioridade     | Situação                                                                                                             |
+| ------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
+| RF28 — Consultar a trilha de auditoria por entidade     | Desejável      | A auditoria é **gravada** em todas as escritas, mas não há endpoint de consulta. Hoje, só via banco (Prisma Studio). |
+| RF43 — Painel resumido (indicadores)                    | Desejável      | Não implementado. Os dados existem: listagem com `?atrasada=true`, status e ocorrências abertas.                     |
+| Frontend (painel e portal)                              | Fora do escopo | O projeto entrega a API. O Swagger UI serve como cliente.                                                            |
+| RNF14 — Meta de desempenho (p95 < 500 ms com 10 mil OS) | Obrigatório    | Índices criados para os filtros, mas **sem teste de carga** que comprove a meta.                                     |
+
+Todos os requisitos obrigatórios (M) de funcionalidade estão implementados e cobertos por
+testes. Veja a rastreabilidade em [plano-de-testes.md](docs/qualidade/plano-de-testes.md).

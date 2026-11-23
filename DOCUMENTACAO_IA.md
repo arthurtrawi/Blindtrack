@@ -1,55 +1,112 @@
-# Documentação do Uso de IA
+# Documentação do Uso de Inteligência Artificial
 
-> Documento vivo, atualizado ao fim de cada fase. As seções marcadas _(a preencher pelo
-> desenvolvedor)_ precisam ser escritas por quem fez a validação humana.
+Este documento registra como a IA foi usada no desenvolvimento do BlindTrack: o que ela
+produziu, o que verificou, onde errou e o que depende de validação humana.
+
+> As seções **4** e **5** precisam ser completadas pelo desenvolvedor. A IA registrou ali
+> apenas fatos que observou durante o trabalho. Ela não pode atestar a revisão humana em
+> nome de ninguém.
 
 ## 1. Ferramentas utilizadas
 
-| Ferramenta                     | Modelo          | Uso                                            |
-| ------------------------------ | --------------- | ---------------------------------------------- |
-| Claude Code (extensão VS Code) | Claude Opus 5.5 | Planejamento, geração de código e documentação |
+| Ferramenta                        | Versão / modelo | Uso                                                                                                 |
+| --------------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| Claude Code (extensão do VS Code) | Claude Opus 5.5 | Planejamento, geração de código, testes, execução de comandos no terminal, depuração e documentação |
+
+A IA trabalhou diretamente no ambiente do desenvolvedor: criou e editou arquivos, executou
+comandos (npm, Prisma, Docker, psql, curl, git em modo leitura) e leu as saídas reais. Os
+commits foram feitos pelo desenvolvedor.
 
 ## 2. Prompts utilizados
 
-| Fase | Prompt                                                                                                                                                                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | "Prompt Mestre — Desenvolvimento de um Sistema de Gestão e Rastreabilidade de Blindagem Automotiva" (texto integral mantido pelo desenvolvedor no repositório/relatório). |
+| Fase               | Prompt do desenvolvedor (resumo fiel)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 — Planejamento   | **Prompt mestre**: "Desenvolvimento de um Sistema de Gestão e Rastreabilidade de Blindagem Automotiva". Define papel (arquiteto/tech lead), contexto, stack obrigatória (Node 22/24, Express, TypeScript, PostgreSQL 16 em Docker, Prisma, Zod, JWT, bcrypt, Helmet, CORS, Pino, Swagger, Jest/Vitest, Supertest), monólito modular, estrutura de pastas, entidades, regras de negócio, segurança/LGPD, endpoints, testes, documentação acadêmica e execução em 6 fases, com planejamento antes da implementação. O texto integral fica com o desenvolvedor. |
+| 2 — Infraestrutura | Aprovação das decisões da Fase 1 e respostas às suposições: nome `Blindada-veiculo`; prefixo `/api/v1`; documentos obrigatórios (contrato, checklist de vistoria, declaração de blindagem, termo de entrega, aprovados por GESTOR/ADMIN); só `TROCA_VIDROS` dispensável; JWT único de 8 h; manter o Node v26 instalado, garantindo compatibilidade com o 24 LTS; pedido dos comandos de instalação do Docker e do Git.                                                                                                                                       |
+| 2 (cont.)          | "Fiz o que pediu. Poderia verificar para que possamos dar seguimento" (validação do ambiente).                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 3, 4a, 4b, 5, 6    | Aprovação para iniciar cada fase ("sim, aprovado, pode iniciar") e, após interrupções, "pode continuar de onde parou".                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 ## 3. Etapas com auxílio da IA
 
-| Fase                                                                 | Data       | Entregas geradas com IA                                                                                                                                                                                                                                                                                                                                                                  |
-| -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — Planejamento                                                     | 2026-11-23 | `docs/requisitos/01..04`, `arquitetura.md`, este arquivo                                                                                                                                                                                                                                                                                                                                 |
-| 5 — Qualidade                                                        | 2026-11-23 | `config/swagger.ts` (OpenAPI gerado dos schemas Zod, 42 operações), `scripts/gerar-openapi.ts`, `docs/api/openapi.json`; máscara de dados pessoais nos logs; revogação de sessão na troca de senha (migration `revogacao_token_senha`); override da dependência `effect`; testes `openapi`, `error-handler` e de revogação; `docs/qualidade/plano-de-testes.md` e `revisao-seguranca.md` |
-| 4b — Backend: OS, etapas, histórico, ocorrências, documentos, portal | 2026-11-23 | `services/domain/*` (máquinas de estado de OS, etapa e ocorrência; prazos); services, controllers, rotas e schemas de OS, etapas, ocorrências, documentos, modelo de etapas e portal; `historico.service`, `storage.service`, middleware de upload; 4 novos arquivos de teste                                                                                                            |
-| 4a — Backend: auth, usuários, clientes, veículos                     | 2026-11-23 | middlewares `authenticate`/`authorize`/`validate`/`rate-limit`; services, controllers, rotas e schemas Zod dos 4 módulos; `auditoria.service`; utilitários de CPF/CNPJ (inclui CNPJ alfanumérico), placa/chassi e paginação; migration `cnpj_alfanumerico`; 7 novos arquivos de teste                                                                                                    |
-| 3 — Modelagem                                                        | 2026-11-23 | `prisma/schema.prisma` (11 modelos, 11 enums), migrations `init` (com SQL manual: sequence, índices parciais, CHECKs, triggers) e `erro_imutabilidade`, `prisma/seed.ts`, `tests/setup/global-setup.ts`, `tests/helpers/db.ts`, `tests/integration/banco.test.ts`, `docs/modelagem/modelo-de-dados.md`, `docs/diagramas/diagrama-de-classes.md`                                          |
-| 2 — Infraestrutura                                                   | 2026-11-23 | `package.json`, `tsconfig*.json`, `docker-compose.yml`, script de init do banco de testes, `.env.example`, `.gitignore`, `prisma.config.ts`, `prisma/schema.prisma` (só gerador/datasource), `src/config/*`, middlewares de log/erro/404, rota `/health`, `app.ts`, `server.ts`, ESLint/Prettier/Vitest, testes iniciais, `README.md`                                                    |
+| Fase                   | Commit                  | Entregas geradas com IA                                                                                                                                                                                                                                                                         |
+| ---------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Planejamento       | (incluído no `5fea060`) | `docs/requisitos/01..04` (visão, 43 RF, 22 RNF, 36 RN, máquinas de estado), `arquitetura.md` (versão inicial, 14 ADRs), este arquivo                                                                                                                                                            |
+| 2 — Infraestrutura     | `5fea060`               | `package.json`, `tsconfig*.json`, `docker-compose.yml`, script de criação do banco de testes, `.env.example`, `.gitignore`, `prisma.config.ts`, `src/config/*`, middlewares de log/erro/404, rota `/health`, `app.ts`, `server.ts`, ESLint/Prettier/Vitest, testes iniciais, `README.md`        |
+| 3 — Modelagem          | `c26772b`               | `prisma/schema.prisma` (11 modelos, 11 enums), migrations `init` (com SQL manual: sequence, índices parciais, CHECKs, triggers) e `erro_imutabilidade`, `prisma/seed.ts`, infraestrutura de testes com banco real, `docs/modelagem/modelo-de-dados.md`, `docs/diagramas/diagrama-de-classes.md` |
+| 4a — Cadastros         | `c26772b`               | Autenticação (JWT, bcrypt, rate limit), usuários, clientes, veículos; middlewares `authenticate`/`authorize`/`validate`; auditoria; validação de CPF/CNPJ (inclui alfanumérico); migration `cnpj_alfanumerico`                                                                                  |
+| 4b — Operação          | `4e45d4e`               | Máquinas de estado (OS, etapa, ocorrência) e prazos em `services/domain`; OS, etapas, histórico, linha do tempo, ocorrências, documentos (upload com verificação de conteúdo), modelo de etapas, portal do cliente                                                                              |
+| 5 — Qualidade          | `d3be0fa`               | OpenAPI gerado dos schemas Zod (42 operações) e teste de contrato; máscara de dados pessoais nos logs; revogação de sessão na troca de senha (migration `revogacao_token_senha`); override da dependência `effect`; testes de tratamento de erros; `docs/qualidade/`                            |
+| 6 — Documentação final | (pendente)              | README reestruturado; `arquitetura.md` revisado contra o código; `docs/casos-de-uso/casos-de-uso.md`; `docs/diagramas/diagramas-de-sequencia.md`; `docs/README.md`; `docs/evidencias/`; `kanban-prints/README.md`; este documento consolidado                                                   |
 
-## 4. Modificações realizadas pelo desenvolvedor
+## 4. Modificações e decisões do desenvolvedor
 
-_(a preencher pelo desenvolvedor: o que foi alterado, removido ou acrescentado em relação ao que a IA gerou)_
+### 4.1 Registradas pela IA (fatos observados)
+
+- **Decisões de requisito** tomadas pelo desenvolvedor na Fase 2: nome do projeto, prefixo da API, lista de documentos obrigatórios para a entrega, etapa dispensável, política de token e manutenção do Node 26.
+- **Instalação e configuração do ambiente:** Docker, Docker Compose e Git, com os comandos fornecidos pela IA. O container do banco foi colocado no ar e o repositório local foi criado.
+- **Porta do PostgreSQL alterada para 5433** no `docker-compose.yml`, `.env` e `.env.example`, para não conflitar com um PostgreSQL nativo na porta 5432 (alteração feita fora da IA, durante a Fase 2).
+- **Commits** de cada fase (`5fea060`, `c26772b`, `4e45d4e`, `d3be0fa`).
+- **Interrupções** de ações em andamento em alguns momentos, seguidas de pedidos de continuidade.
+- **Reinicializações da VM**, inclusive com aumento de memória (de 4,4 GB para 5,5 GB) durante o projeto.
+
+### 4.2 A completar pelo desenvolvedor
+
+_(Descreva o que você alterou, removeu ou acrescentou no código ou nos documentos gerados
+pela IA, e por quê. Se nada foi alterado, registre isso explicitamente.)_
 
 ## 5. Validação humana
 
-_(a preencher pelo desenvolvedor: como cada entrega foi revisada, por exemplo leitura crítica das regras de negócio, execução das migrations, execução dos testes, testes manuais no Swagger)_
+_(A completar pelo desenvolvedor. Descreva como cada entrega foi revisada.)_
 
-## 6. Limitações observadas
+Checklist sugerido:
 
-- Fase 1: nenhuma migration nem teste executado.
-- Fase 2 (executado pela IA em 2026-11-23, Node v26.12.1, **sem Docker instalado**): `npm install`, `prisma generate`, `tsc --noEmit`, `eslint`, `vitest run` (10 testes aprovados, 1 pulado por exigir banco), `npm run build` e subida do servidor compilado sem banco disponível (5 tentativas de conexão e saída com log fatal, como esperado).
-- **Não validado pela IA**: conexão real com o PostgreSQL do Docker, o teste `/health` → 200 e o script de criação do banco de testes. Depende da instalação do Docker pelo desenvolvedor.
-- Fase 3 (executado pela IA em 2026-11-23, PostgreSQL 16.16 no Docker): `prisma migrate dev` aplicou as 2 migrations no banco de desenvolvimento, e o globalSetup aplicou as mesmas no banco de testes. O seed rodou duas vezes (a segunda confirmou a idempotência). As 12 regras do SQL manual foram testadas provocando violações via `psql`, e todas foram rejeitadas. `prisma migrate diff` não acusou divergência. `vitest run`: 20 testes aprovados e 1 pulado (o caso "banco indisponível").
-- Correção durante a Fase 3: o primeiro trigger usava SQLSTATE `23001`, que o Prisma reporta como "Foreign key constraint violated" (P2003). Isso foi detectado pelos testes e corrigido numa **nova** migration (`P0001`), sem editar a migration já aplicada. O Prisma 7 bloqueou o `migrate reset` pedido pela IA sem consentimento explícito do usuário, e a abordagem com nova migration evitou apagar o banco.
-- Fase 4a (executado pela IA em 2026-11-23): `tsc --noEmit` e `eslint` sem erros. `vitest run`: **93 testes aprovados** e 1 pulado (caso "banco indisponível"). São 41 unitários e 52 de integração com Supertest contra o PostgreSQL real; a contagem por arquivo foi conferida para garantir que nenhum teste de integração foi pulado. Teste manual com o servidor rodando e os usuários do seed: login, listagens, máscara de CPF para TECNICO, 403 em `/usuarios` para ATENDIMENTO, e o log não contém senha nem CPF.
-- Durante a Fase 4a, a IA identificou que o CHECK de CPF/CNPJ criado na Fase 3 rejeitaria o **CNPJ alfanumérico**, obrigatório desde jul/2026. Foi corrigido com uma nova migration e com o validador. **Recomenda-se validação humana** do algoritmo contra a documentação oficial da Receita Federal.
-- Também na Fase 4a, a IA precisou corrigir um erro de tipos (query tipada nos handlers do Express) que só apareceu no typecheck. A solução foi o helper `queryValidada`.
-- **Pendente (Fase 5):** documentação Swagger/OpenAPI dos novos endpoints. Hoje `/api/v1/docs` só descreve `/health`.
-- Falhas intermitentes observadas na Fase 4a: em algumas execuções, testes de integração estouraram o timeout (5 s por teste, 10 s por hook). A IA investigou e descartou locks no PostgreSQL (`pg_stat_activity` sem esperas de lock). A causa foi falta de recursos da VM: load average de 15–17 em 3 vCPUs, memória quase esgotada com swap ativo e um processo `glycin-svg` do GNOME travado consumindo ~77% de CPU. Os timeouts foram elevados para 30 s/60 s em `vitest.config.ts`. Nessas mesmas condições, a suíte completa passou (93 aprovados, 235 s).
-- Fase 4b (executado pela IA em 2026-11-23): `tsc --noEmit` e `eslint` sem erros. `vitest run`: **151 testes aprovados** e 1 pulado, em 41 s, com a VM já reiniciada e sem sobrecarga. O teste `fluxo-ordem.test.ts` percorre via HTTP o ciclo completo de uma OS: abertura, sequência de etapas, ocorrência impeditiva, dispensa, reabertura, documentos, aprovação, entrega e bloqueio pós-entrega. Teste manual com o servidor e os dados do seed: filtro de atrasadas, etapa atrasada, portal do cliente e 404 para OS de outro cliente.
-- Defeitos encontrados pelos testes da Fase 4b e corrigidos: (1) a validação do modelo de etapas passava `''` como UUID e gerava erro 500; (2) `diasAtraso` arredondava para cima (2 dias e alguns ms viravam 3), e foi redefinido como dias completos com mínimo 1 (RN27d); (3) o seed gravava o evento de abertura com a data real, fora da ordem cronológica. Os dados de exemplo já gravados no banco de desenvolvimento mantêm essa ordem antiga, porque o histórico é imutável.
-- **Pendente (Fase 5):** Swagger/OpenAPI de todos os endpoints. Hoje `/api/v1/docs` só descreve `/health`.
-- Fase 5 (executado pela IA em 2026-11-23): `tsc --noEmit` e `eslint` sem erros. `vitest run`: **206 testes aprovados** e 1 ignorado. Cobertura: 94,07% das linhas e 80,23% dos ramos (`src/services`: 91,05%). `npm audit --omit=dev`: 0 vulnerabilidades. Detalhes em `docs/qualidade/`.
-- Achados de segurança da Fase 5, todos reproduzidos antes da correção: (S1) CPF e e-mail gravados nos logs pela query string, confirmado com o servidor real e corrigido com máscara; (S2) sessão sobrevivia à troca de senha; (S3) dependência vulnerável `effect`; (S4) tratamento de erros pouco testado.
-- Erro de diagnóstico da IA durante a Fase 5: ao procurar o vazamento nos logs, a IA concluiu inicialmente que "logs estavam sendo perdidos". Na verdade, o teste estava contaminado por um servidor da rodada anterior ainda em execução na mesma porta. Refeito com portas isoladas, o comportamento correto foi confirmado.
-- Incidente operacional: o script `db:migrate` (`prisma migrate dev && prisma generate`) repassava o `--name` ao `generate`, deixando o `migrate dev` parado numa pergunta interativa. O `generate` foi movido para os hooks `postdb:migrate`/`postdb:deploy`.
+- [ ] Li as regras de negócio (`docs/requisitos/04-regras-de-negocio.md`) e confirmei que refletem o processo real de blindagem.
+- [ ] Conferi o algoritmo do **CNPJ alfanumérico** contra a documentação oficial da Receita Federal (IN RFB 2.229/2024).
+- [ ] Executei `npm test` na minha máquina e obtive o mesmo resultado das evidências.
+- [ ] Subi a API, fiz login no Swagger e executei o fluxo de uma OS (abertura → etapas → documentos → entrega).
+- [ ] Acessei o portal com o usuário `cliente@blindtrack.example` e confirmei que não vê dados internos.
+- [ ] Revisei o SQL manual das migrations (`prisma/migrations/*/migration.sql`).
+- [ ] Li a revisão de segurança e concordo com os riscos aceitos.
+- [ ] Revisei os diagramas e confirmei que correspondem ao comportamento observado.
+
+## 6. Verificações automáticas executadas pela IA
+
+Todas foram executadas de verdade, com a saída lida pela IA. Nenhum resultado foi presumido.
+
+| Fase | Verificação                                                                          | Resultado                                                                                                             |
+| ---- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 2    | `npm install`, `tsc`, `eslint`, `vitest`, build, servidor sem banco                  | 10 testes aprovados; servidor tenta 5 vezes conectar e encerra com log `fatal`                                        |
+| 2    | Após a instalação do Docker: banco de teste criado, `/health` 200, commit sem `.env` | OK                                                                                                                    |
+| 3    | 12 regras do SQL manual violadas de propósito via `psql`                             | Todas rejeitadas pelo banco                                                                                           |
+| 3    | Seed executado 2 vezes; `prisma migrate diff`                                        | Idempotente; sem divergência                                                                                          |
+| 4a   | Suíte + teste manual com o servidor e os usuários do seed                            | 93 testes; log sem senha nem CPF (nas rotas testadas)                                                                 |
+| 4b   | Suíte + teste manual (atrasadas, portal, 404 entre clientes)                         | 151 testes                                                                                                            |
+| 5    | Suíte com cobertura; `npm audit --omit=dev`; medição de logs com o servidor real     | 206 testes; 94,07% das linhas; 0 vulnerabilidades em produção                                                         |
+| 6    | **Instalação limpa** em pasta nova (só arquivos versionáveis + `npm ci`)             | typecheck, lint, build, migrations OK; suíte 3 de 3 vezes com 206 aprovados. Ver [docs/evidencias/](docs/evidencias/) |
+
+## 7. Erros da IA e como foram corrigidos
+
+Registrados para transparência: a validação humana deve levar em conta que a IA erra.
+
+| Fase | Erro                                                                                                                                                                             | Como foi detectado                                 | Correção                                                                                                                                               |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 3    | Trigger com SQLSTATE `23001`, que o Prisma reporta como "Foreign key constraint violated"                                                                                        | Testes de integração                               | Nova migration (`P0001`), sem editar a migration já aplicada. O Prisma 7 bloqueou o `migrate reset` sem consentimento do usuário, e a IA não insistiu. |
+| 3    | CHECK de CPF/CNPJ só numérico, quando o CNPJ alfanumérico já estava em vigor                                                                                                     | Revisão da própria IA na Fase 4a                   | Migration `cnpj_alfanumerico` e novo validador                                                                                                         |
+| 4a   | Handlers do Express com query tipada (erro de tipos)                                                                                                                             | `tsc --noEmit`                                     | Helper `queryValidada`                                                                                                                                 |
+| 4a   | Timeouts intermitentes atribuídos inicialmente a locks no banco                                                                                                                  | Investigação com `pg_stat_activity`                | Causa real: VM sobrecarregada (processo do GNOME travado, swap). Timeouts dos testes ajustados.                                                        |
+| 4b   | UUID vazio (`''`) na validação do modelo de etapas → erro 500                                                                                                                    | Testes de integração                               | Parâmetro opcional                                                                                                                                     |
+| 4b   | `diasAtraso` arredondado para cima (2 dias e alguns ms viravam 3)                                                                                                                | Testes de integração                               | Dias completos, mínimo 1 (RN27d)                                                                                                                       |
+| 4b   | Seed gravava o evento de abertura fora da ordem cronológica                                                                                                                      | Teste manual da linha do tempo                     | Seed corrigido. Os dados antigos do banco de desenvolvimento permanecem, porque o histórico é imutável.                                                |
+| 5    | **CPF e e-mail gravados nos logs** pela query string (defeito de segurança introduzido nas fases anteriores)                                                                     | Revisão de segurança + medição com o servidor real | Máscara no serializador de logs                                                                                                                        |
+| 5    | Sessão sobrevivia à troca de senha                                                                                                                                               | Revisão de segurança                               | Revogação por `senha_alterada_em`                                                                                                                      |
+| 5    | Diagnóstico errado: "logs sendo perdidos"                                                                                                                                        | Repetição isolada do teste                         | Era um servidor anterior ainda ativo na mesma porta                                                                                                    |
+| 5    | Script `db:migrate` repassava `--name` ao comando errado e travava numa pergunta interativa                                                                                      | Processo parado por 5 minutos                      | `generate` movido para os hooks `postdb:*`                                                                                                             |
+| 6    | `arquitetura.md` com 12 afirmações desatualizadas, entre elas uma **permissão para consultar auditoria que nunca foi implementada**                                              | Revisão contra o código                            | Documento reescrito; seção de requisitos não implementados                                                                                             |
+| 6    | Verificação de instalação limpa feita em `/tmp` (tmpfs, em RAM) numa VM sem swap, o que causou pressão de memória, 1 falha não identificada e um processo encerrado pelo sistema | Erro "Invalid cross-device link" revelou o tmpfs   | Refeita em disco: 3 de 3 rodadas aprovadas                                                                                                             |
+
+## 8. Limitações
+
+- **Requisitos não implementados:** RF28 (consulta da auditoria) e RF43 (painel de indicadores), ambos desejáveis. Também não há teste de carga para a meta de desempenho (RNF14). Detalhes no [arquitetura.md §10](arquitetura.md).
+- **Diagramas Mermaid:** foram escritos à mão e revisados, mas a IA não os renderizou neste ambiente (sem navegador). Confira a visualização no GitHub ou no VS Code.
+- **Kanban:** as capturas em `kanban-prints/` dependem do desenvolvedor.
+- **Dados de exemplo:** os registros do banco de desenvolvimento criados antes da correção do seed mantêm o evento de abertura fora de ordem. Um banco novo (`docker compose down -v` + migrations + seed) não tem esse problema.
