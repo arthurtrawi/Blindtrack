@@ -1,6 +1,6 @@
 # Arquitetura — BlindTrack
 
-> Status: **Fase 2 (Infraestrutura) concluída**. Este documento será revisado na Fase 6.
+> Status: **Fase 4a concluída** (auth, usuários, clientes, veículos). Detalhes do banco em [docs/modelagem/modelo-de-dados.md](docs/modelagem/modelo-de-dados.md). Este documento será revisado na Fase 6.
 
 ## 1. Visão geral
 
@@ -173,6 +173,10 @@ sequenceDiagram
 | ADR-12 | Arquivos em disco local por trás de uma interface `StorageService`.                                                                                              | S3/MinIO já na primeira versão.                 | Simplicidade. A interface permite trocar o armazenamento sem mexer nos services.                                                                                                                            |
 | ADR-13 | Testes de integração contra um **PostgreSQL real** (banco `blindtrack_test` no mesmo container), limpo entre suítes.                                             | SQLite / banco em memória.                      | Proibido pelo enunciado. Além disso, só o PostgreSQL real exercita triggers, sequences e `timestamptz`.                                                                                                     |
 | ADR-14 | Prefixo **`/api/v1`**. Os caminhos do enunciado são mantidos depois do prefixo (ex.: `/api/v1/ordens-servico`).                                                  | `/api` sem versão.                              | O enunciado pede versionamento "quando adequado". Uma API pública com portal de cliente tende a evoluir.                                                                                                    |
+| ADR-15 | `authenticate` **recarrega o usuário do banco** a cada requisição.                                                                                               | Confiar só no conteúdo do JWT.                  | Desativação e mudança de perfil valem na hora, sem esperar o token de 8 h expirar (ADR-11 não tem revogação). O custo é uma consulta por chave primária.                                                    |
+| ADR-16 | Projeção por perfil nos services: o TECNICO recebe cliente com documento mascarado e sem contato/endereço.                                                       | Mesmo payload para todos.                       | Minimização (LGPD): o técnico não precisa desses dados para executar a blindagem.                                                                                                                           |
+| ADR-17 | Validação no middleware `validate`, que substitui `req.body/params/query` pelos valores normalizados. Os schemas são `strict`.                                   | Validar dentro de cada controller.              | Um ponto único de validação. Campos extras são rejeitados (proteção contra mass assignment).                                                                                                                |
+| ADR-18 | CNPJ alfanumérico aceito (validador + CHECK ajustado na migration `cnpj_alfanumerico`).                                                                          | Só CNPJ numérico.                               | Exigência legal vigente desde julho/2026. Sem isso, empresas novas não poderiam ser cadastradas.                                                                                                            |
 
 ## 7. Matriz de permissões (resumo)
 
@@ -203,7 +207,8 @@ sequenceDiagram
 
 | Método           | Rota                                 | Observação                                                                       |
 | ---------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
-| POST             | `/auth/login`                        | Público, com limite de tentativas                                                |
+| POST             | `/auth/login`                        | Público, com limite de tentativas falhas por IP                                  |
+| PATCH            | `/auth/senha`                        | _(extra, RF05)_ troca da própria senha                                           |
 | GET              | `/auth/me`                           |                                                                                  |
 | POST/GET         | `/usuarios`                          |                                                                                  |
 | GET/PATCH        | `/usuarios/:id`                      | Desativar = `PATCH {ativo:false}`                                                |
@@ -259,4 +264,4 @@ erDiagram
     USUARIO ||--o{ AUDITORIA : executa
 ```
 
-O detalhamento de campos, índices e restrições virá no `schema.prisma` (Fase 3).
+O detalhamento de campos, índices, CHECKs e triggers está em [docs/modelagem/modelo-de-dados.md](docs/modelagem/modelo-de-dados.md). O diagrama de classes está em [docs/diagramas/diagrama-de-classes.md](docs/diagramas/diagrama-de-classes.md).

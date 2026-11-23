@@ -105,9 +105,9 @@ stateDiagram-v2
 
 ## Cadastros
 
-| ID   | Regra                                                                                                         |
-| ---- | ------------------------------------------------------------------------------------------------------------- |
-| RN33 | CPF/CNPJ é único entre clientes, guardado só com dígitos e validado pelos dígitos verificadores.              |
-| RN34 | Placa (formatos antigo e Mercosul, normalizada em maiúsculas) e chassi (17 caracteres, sem I/O/Q) são únicos. |
-| RN35 | O e-mail de usuário é único (sem diferenciar maiúsculas e minúsculas). Usuário inativo não autentica.         |
-| RN36 | Cliente com OS não encerrada não pode ser inativado. Veículos não são excluídos. Usuários são só desativados. |
+| ID   | Regra                                                                                                                                                                                                                                   |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RN33 | CPF/CNPJ é único entre clientes, guardado sem pontuação e validado pelos dígitos verificadores. O CNPJ pode ser numérico ou **alfanumérico** (IN RFB 2.229/2024, emitido desde julho/2026): 12 caracteres `[0-9A-Z]` + 2 DVs numéricos. |
+| RN34 | Placa (formatos antigo e Mercosul, normalizada em maiúsculas) e chassi (17 caracteres, sem I/O/Q) são únicos.                                                                                                                           |
+| RN35 | O e-mail de usuário é único (sem diferenciar maiúsculas e minúsculas). Usuário inativo não autentica.                                                                                                                                   |
+| RN36 | Cliente com OS não encerrada não pode ser inativado. Veículos não são excluídos. Usuários são só desativados.                                                                                                                           |

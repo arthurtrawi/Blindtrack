@@ -7,7 +7,7 @@ histórico imutável, além de um portal de consulta para o cliente.
 > O sistema é **administrativo e de rastreabilidade**. Ele não toma decisões técnicas de
 > engenharia, certificação, inspeção ou conformidade legal: só registra as decisões humanas.
 
-**Status:** Fase 2 (Infraestrutura) concluída. Os módulos de negócio entram nas Fases 3 e 4.
+**Status:** Fase 4a concluída: autenticação, usuários, clientes e veículos. A Fase 4b (OS, etapas, ocorrências, documentos e portal) é a próxima.
 
 ## Tecnologias
 
@@ -87,8 +87,9 @@ npm install
 docker compose up -d
 docker compose ps         # aguarde STATUS "healthy"
 
-# 4. Migrations (a partir da Fase 3, quando o schema tiver modelos)
-npm run db:migrate
+# 4. Migrations + Prisma Client e dados iniciais
+npm run db:migrate        # aplica as migrations e regenera o Prisma Client
+npm run db:seed           # modelos de etapa, usuários e (opcional) dados de exemplo
 
 # 5. API em modo desenvolvimento (recarrega ao salvar)
 npm run dev
@@ -109,6 +110,47 @@ Documentação interativa: <http://localhost:3000/api/v1/docs>
 O PostgreSQL do container fica publicado em **`127.0.0.1:5433`** (`POSTGRES_PORT`), para não
 conflitar com um PostgreSQL instalado nativamente na porta 5432. Dentro do container, a
 porta continua 5432. A `DATABASE_URL` do `.env` precisa usar a mesma porta de `POSTGRES_PORT`.
+
+## Usuários do seed
+
+| E-mail                                                        | Perfil                                     |
+| ------------------------------------------------------------- | ------------------------------------------ |
+| `admin@blindtrack.example`                                    | ADMIN                                      |
+| `gestor@blindtrack.example`                                   | GESTOR                                     |
+| `tecnico1@blindtrack.example` / `tecnico2@blindtrack.example` | TECNICO                                    |
+| `atendimento@blindtrack.example`                              | ATENDIMENTO                                |
+| `cliente@blindtrack.example`                                  | CLIENTE (só com `SEED_DADOS_EXEMPLO=true`) |
+
+Todos usam a senha definida em `SEED_SENHA_INICIAL` no `.env`. Nenhuma senha fica no
+repositório. O seed pode ser executado várias vezes: ele não duplica dados nem sobrescreve
+senhas de usuários existentes.
+
+> O Prisma 7 **não** regenera o client depois de `prisma migrate dev`. Por isso os scripts
+> `db:migrate` e `db:deploy` já encadeiam `prisma generate`.
+
+## Endpoints disponíveis (Fase 4a)
+
+Todos sob `/api/v1`. Respostas de sucesso: `{ "data": ... }`. Listagens:
+`{ "data": [...], "meta": { page, pageSize, total, totalPages } }`.
+
+| Método e rota                                   | Perfis                                                          |
+| ----------------------------------------------- | --------------------------------------------------------------- |
+| `POST /auth/login`                              | público (limite de tentativas falhas por IP)                    |
+| `GET /auth/me`, `PATCH /auth/senha`             | qualquer usuário autenticado                                    |
+| `POST/GET /usuarios`, `GET/PATCH /usuarios/:id` | ADMIN                                                           |
+| `POST /clientes`, `PATCH /clientes/:id`         | ADMIN, GESTOR, ATENDIMENTO (corrigir CPF/CNPJ: só ADMIN/GESTOR) |
+| `GET /clientes`, `GET /clientes/:id`            | + TECNICO, que recebe dados reduzidos e documento mascarado     |
+| `DELETE /clientes/:id` (inativação lógica)      | ADMIN, GESTOR                                                   |
+| `POST /veiculos`, `PATCH /veiculos/:id`         | ADMIN, GESTOR, ATENDIMENTO                                      |
+| `GET /veiculos`, `GET /veiculos/:id`            | + TECNICO                                                       |
+
+Exemplo rápido:
+
+```bash
+TOKEN=$(curl -s -X POST localhost:3000/api/v1/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"atendimento@blindtrack.example","senha":"<SEED_SENHA_INICIAL>"}' | jq -r .data.token)
+curl -s "localhost:3000/api/v1/clientes?nome=maria" -H "Authorization: Bearer $TOKEN" | jq
+```
 
 ## Comandos Docker
 
