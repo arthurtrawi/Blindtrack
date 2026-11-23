@@ -7,7 +7,7 @@ import { TelaCarregando } from '@/components/layout/TelaCarregando';
 import { useAuth } from '@/hooks/useAuth';
 import { PainelInicioPage } from '@/pages/admin/PainelInicioPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
-import { PortalInicioPage } from '@/pages/cliente/PortalInicioPage';
+import { PortalDashboardPage } from '@/pages/cliente/PortalDashboardPage';
 import { AcessoNegadoPage } from '@/pages/erros/AcessoNegadoPage';
 import { NaoEncontradoPage } from '@/pages/erros/NaoEncontradoPage';
 import { StatusConexaoPage } from '@/pages/sistema/StatusConexaoPage';
@@ -32,7 +32,8 @@ export function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<RoleRoute perfis={['CLIENTE']} />}>
-          <Route path="/portal" element={<PortalInicioPage />} />
+          <Route path="/portal" element={<PortalDashboardPage />} />
+          <Route path="/portal/ordens/:id" element={<PortalDashboardPage />} />
         </Route>
         <Route element={<RoleRoute perfis={PERFIS_INTERNOS} />}>
           <Route path="/painel" element={<PainelInicioPage />} />
