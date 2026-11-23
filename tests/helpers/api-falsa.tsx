@@ -6,6 +6,7 @@ import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ToastProvider } from '@/contexts/ToastContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import type { PerfilUsuario, UsuarioAutenticado } from '@/types/usuario';
 
@@ -68,7 +69,9 @@ export function renderizarApp(rotaInicial = '/') {
   return render(
     <MemoryRouter initialEntries={[rotaInicial]}>
       <AuthProvider>
-        <AppRoutes />
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );

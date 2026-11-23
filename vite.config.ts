@@ -20,6 +20,10 @@ export default defineConfig({
     setupFiles: ['tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
     css: false,
+    // Testes de tela digitam e clicam como um usuário real (user-event). Em VMs com pouca CPU,
+    // o limite padrão de 5 s mede a máquina, não o código; um timeout ainda deixava digitações
+    // pendentes "vazarem" para o teste seguinte, causando falhas em cascata.
+    testTimeout: 30_000,
     env: { VITE_API_URL: 'http://api.teste/api/v1' },
     coverage: {
       provider: 'v8',

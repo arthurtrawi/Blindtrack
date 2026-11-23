@@ -5,7 +5,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { TelaCarregando } from '@/components/layout/TelaCarregando';
 import { useAuth } from '@/hooks/useAuth';
-import { PainelInicioPage } from '@/pages/admin/PainelInicioPage';
+import { AdminLayout } from '@/components/layout/AdminLayout';
+import { ClientesPage } from '@/pages/admin/ClientesPage';
+import { DashboardPage } from '@/pages/admin/DashboardPage';
+import { ModelosEtapaPage } from '@/pages/admin/ModelosEtapaPage';
+import { OrdemDetalhePage } from '@/pages/admin/OrdemDetalhePage';
+import { OrdensPage } from '@/pages/admin/OrdensPage';
+import { UsuariosPage } from '@/pages/admin/UsuariosPage';
+import { VeiculosPage } from '@/pages/admin/VeiculosPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { PortalDashboardPage } from '@/pages/cliente/PortalDashboardPage';
 import { AcessoNegadoPage } from '@/pages/erros/AcessoNegadoPage';
@@ -36,7 +43,19 @@ export function AppRoutes() {
           <Route path="/portal/ordens/:id" element={<PortalDashboardPage />} />
         </Route>
         <Route element={<RoleRoute perfis={PERFIS_INTERNOS} />}>
-          <Route path="/painel" element={<PainelInicioPage />} />
+          <Route path="/painel" element={<AdminLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="ordens" element={<OrdensPage />} />
+            <Route path="ordens/:id" element={<OrdemDetalhePage />} />
+            <Route path="clientes" element={<ClientesPage />} />
+            <Route path="veiculos" element={<VeiculosPage />} />
+            <Route element={<RoleRoute perfis={['ADMIN']} />}>
+              <Route path="usuarios" element={<UsuariosPage />} />
+            </Route>
+            <Route element={<RoleRoute perfis={['ADMIN', 'GESTOR']} />}>
+              <Route path="modelos-etapa" element={<ModelosEtapaPage />} />
+            </Route>
+          </Route>
         </Route>
         <Route path="/acesso-negado" element={<AcessoNegadoPage />} />
       </Route>

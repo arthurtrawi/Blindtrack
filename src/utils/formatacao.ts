@@ -49,3 +49,22 @@ export function formatarPlaca(placa: string): string {
 export function primeiroNome(nome: string): string {
   return nome.trim().split(/\s+/)[0] ?? nome;
 }
+
+/**
+ * Data de um <input type="date"> (aaaa-mm-dd, fuso do navegador) → ISO 8601 com fuso,
+ * como o backend exige. O horário padrão de 18:00 representa "até o fim do expediente".
+ */
+export function dataParaIso(dataLocal: string, hora = '18:00'): string {
+  return new Date(`${dataLocal}T${hora}:00`).toISOString();
+}
+
+/** ISO → aaaa-mm-dd no fuso do navegador (valor de <input type="date">). */
+export function isoParaData(iso: string | null | undefined): string {
+  const data = comoData(iso);
+  return data ? format(data, 'yyyy-MM-dd') : '';
+}
+
+/** Data de hoje (aaaa-mm-dd), útil como `min` de inputs de previsão. */
+export function hojeLocal(): string {
+  return format(new Date(), 'yyyy-MM-dd');
+}

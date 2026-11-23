@@ -50,8 +50,8 @@ describe('Login', () => {
 
     await preencherLogin('gestor@exemplo.example', 'SenhaForte123');
 
-    expect(await screen.findByText('Painel administrativo')).toBeInTheDocument();
-    expect(screen.getByText('Gestor', { selector: 'strong' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toHaveTextContent('Gestor');
   });
 
   it('valida os campos antes de chamar a API', async () => {

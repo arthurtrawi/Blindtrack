@@ -75,3 +75,18 @@ export const ROTULO_TIPO_DOCUMENTO: Record<TipoDocumento, string> = {
   FOTO: 'Foto',
   OUTRO: 'Outro',
 };
+
+export const ROTULO_TIPO_OCORRENCIA = {
+  AGUARDANDO_PECA: 'Aguardando peça',
+  PENDENCIA_DOCUMENTAL: 'Pendência documental',
+  RETRABALHO: 'Retrabalho',
+  ATRASO: 'Atraso',
+  OUTROS: 'Outros',
+} as const;
+
+export const ROTULO_PRIORIDADE = {
+  BAIXA: 'Baixa',
+  MEDIA: 'Média',
+  ALTA: 'Alta',
+  CRITICA: 'Crítica',
+} as const;

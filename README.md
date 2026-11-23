@@ -4,10 +4,12 @@ Interface web do sistema **Blindada-veiculo** (gestão e rastreabilidade de blin
 automotiva): **portal do cliente** e **painel administrativo**. Aplicação SPA independente,
 que consome a API REST do backend (`~/Blindada-veiculo`).
 
-**Status:** Fase 4 (portal do cliente) concluída: seleção de veículo, progresso calculado das
-etapas reais, linha do tempo da blindagem (vertical no celular, horizontal a partir de 1024 px),
-ocorrências, documentos com download autenticado e atualizações. O painel administrativo é a
-Fase 5. Planejamento em [docs/fase-1-planejamento.md](docs/fase-1-planejamento.md).
+**Status:** Fase 5 concluída. O **portal do cliente** (Fase 4) mostra a linha do tempo da
+blindagem, ocorrências, documentos e atualizações. O **painel administrativo** (Fase 5) traz
+dashboard de indicadores, ordens de serviço (filtros na URL, ordenação, detalhe com etapas,
+ocorrências, documentos e histórico), clientes, veículos, usuários e modelos de etapa, com
+ações filtradas por perfil (ADMIN, GESTOR, TECNICO, ATENDIMENTO). Próxima: Fase 6 (qualidade).
+Planejamento em [docs/fase-1-planejamento.md](docs/fase-1-planejamento.md).
 
 ## Como testar o login
 
