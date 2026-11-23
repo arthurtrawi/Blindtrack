@@ -40,6 +40,6 @@ export function validate(schemas: SchemasRequisicao) {
  * O Express tipa `req.query` como ParsedQs e não aceita um tipo próprio na assinatura
  * do handler. Este helper concentra o único cast, amarrado ao tipo de saída do schema.
  */
-export function queryValidada<S extends ZodType>(req: Request, _schema: S): z.output<S> {
+export function queryValidada<S extends ZodType>(req: Pick<Request, 'query'>, _schema: S): z.output<S> {
   return req.query as z.output<S>;
 }

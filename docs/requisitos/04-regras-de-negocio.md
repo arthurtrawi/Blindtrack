@@ -79,13 +79,14 @@ stateDiagram-v2
 
 ## Prazos
 
-| ID    | Regra                                                                                                                                                               |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RN25  | Prazo **planejado** = `previsaoConclusao` (etapa) / `previsaoEntrega` (OS). Prazo **real** = `dataConclusao` / `dataEntrega`. Os dois são guardados separadamente.  |
-| RN26  | Qualquer alteração de previsão depois da criação exige justificativa e gera um registro em `AlteracaoPrevisao` (valor anterior, novo valor, motivo, usuário, data). |
-| RN27a | **Etapa atrasada**: não concluída e `previsaoConclusao < agora`, ou concluída com `dataConclusao > previsaoConclusao`.                                              |
-| RN27b | **OS atrasada**: não encerrada e `previsaoEntrega < agora`, ou entregue com `dataEntrega > previsaoEntrega`.                                                        |
-| RN27c | O atraso é **calculado na consulta**, nunca armazenado, para não ficar desatualizado.                                                                               |
+| ID    | Regra                                                                                                                                                                                                                      |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RN25  | Prazo **planejado** = `previsaoConclusao` (etapa) / `previsaoEntrega` (OS). Prazo **real** = `dataConclusao` / `dataEntrega`. Os dois são guardados separadamente.                                                         |
+| RN26  | Qualquer alteração de previsão depois da criação exige justificativa e gera um registro em `AlteracaoPrevisao` (valor anterior, novo valor, motivo, usuário, data).                                                        |
+| RN27a | **Etapa atrasada**: não concluída e `previsaoConclusao < agora`, ou concluída com `dataConclusao > previsaoConclusao`.                                                                                                     |
+| RN27b | **OS atrasada**: não encerrada e `previsaoEntrega < agora`, ou entregue com `dataEntrega > previsaoEntrega`.                                                                                                               |
+| RN27c | O atraso é **calculado na consulta**, nunca armazenado, para não ficar desatualizado.                                                                                                                                      |
+| RN27d | Dias de atraso = **dias completos** decorridos desde a previsão, com **mínimo de 1** quando há atraso (1 hora de atraso conta 1 dia; 2,5 dias contam 2). Etapa dispensada e OS cancelada nunca são consideradas atrasadas. |
 
 ## Histórico e auditoria
 

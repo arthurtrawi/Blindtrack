@@ -163,6 +163,8 @@ async function criarOrdemComEtapas(
           descricao: 'Ordem de serviço aberta',
           visivelCliente: true,
           usuarioId: dados.abertaPorId,
+          // Mesma data da entrada, para a linha do tempo ficar em ordem cronológica.
+          createdAt: dados.dataEntrada,
         },
       },
     },

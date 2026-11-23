@@ -6,7 +6,7 @@ export default defineConfig({
     globalSetup: ['tests/setup/global-setup.ts'],
     include: ['tests/**/*.test.ts'],
     // NODE_ENV=test faz o env.ts apontar para TEST_DATABASE_URL (nunca para o banco de desenvolvimento).
-    env: { NODE_ENV: 'test' },
+    env: { NODE_ENV: 'test', UPLOAD_DIR: './uploads-test' },
     // Testes de integração compartilham o mesmo banco; arquivos rodam em sequência.
     fileParallelism: false,
     // Testes de integração usam PostgreSQL real e bcrypt. Em VMs com pouca CPU/RAM, os

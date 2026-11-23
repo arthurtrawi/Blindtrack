@@ -7,7 +7,7 @@ histórico imutável, além de um portal de consulta para o cliente.
 > O sistema é **administrativo e de rastreabilidade**. Ele não toma decisões técnicas de
 > engenharia, certificação, inspeção ou conformidade legal: só registra as decisões humanas.
 
-**Status:** Fase 4a concluída: autenticação, usuários, clientes e veículos. A Fase 4b (OS, etapas, ocorrências, documentos e portal) é a próxima.
+**Status:** Fase 4 concluída: toda a API de negócio (autenticação, cadastros, OS, etapas, histórico, ocorrências, documentos e portal do cliente). A Fase 5 (Swagger completo, revisão de segurança e logs) é a próxima.
 
 ## Tecnologias
 
@@ -128,21 +128,35 @@ senhas de usuários existentes.
 > O Prisma 7 **não** regenera o client depois de `prisma migrate dev`. Por isso os scripts
 > `db:migrate` e `db:deploy` já encadeiam `prisma generate`.
 
-## Endpoints disponíveis (Fase 4a)
+## Endpoints disponíveis
 
 Todos sob `/api/v1`. Respostas de sucesso: `{ "data": ... }`. Listagens:
 `{ "data": [...], "meta": { page, pageSize, total, totalPages } }`.
 
-| Método e rota                                   | Perfis                                                          |
-| ----------------------------------------------- | --------------------------------------------------------------- |
-| `POST /auth/login`                              | público (limite de tentativas falhas por IP)                    |
-| `GET /auth/me`, `PATCH /auth/senha`             | qualquer usuário autenticado                                    |
-| `POST/GET /usuarios`, `GET/PATCH /usuarios/:id` | ADMIN                                                           |
-| `POST /clientes`, `PATCH /clientes/:id`         | ADMIN, GESTOR, ATENDIMENTO (corrigir CPF/CNPJ: só ADMIN/GESTOR) |
-| `GET /clientes`, `GET /clientes/:id`            | + TECNICO, que recebe dados reduzidos e documento mascarado     |
-| `DELETE /clientes/:id` (inativação lógica)      | ADMIN, GESTOR                                                   |
-| `POST /veiculos`, `PATCH /veiculos/:id`         | ADMIN, GESTOR, ATENDIMENTO                                      |
-| `GET /veiculos`, `GET /veiculos/:id`            | + TECNICO                                                       |
+| Método e rota                                                                                                     | Perfis                                                          |
+| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `POST /auth/login`                                                                                                | público (limite de tentativas falhas por IP)                    |
+| `GET /auth/me`, `PATCH /auth/senha`                                                                               | qualquer usuário autenticado                                    |
+| `POST/GET /usuarios`, `GET/PATCH /usuarios/:id`                                                                   | ADMIN                                                           |
+| `POST /clientes`, `PATCH /clientes/:id`                                                                           | ADMIN, GESTOR, ATENDIMENTO (corrigir CPF/CNPJ: só ADMIN/GESTOR) |
+| `GET /clientes`, `GET /clientes/:id`                                                                              | + TECNICO, que recebe dados reduzidos e documento mascarado     |
+| `DELETE /clientes/:id` (inativação lógica)                                                                        | ADMIN, GESTOR                                                   |
+| `POST /veiculos`, `PATCH /veiculos/:id`                                                                           | ADMIN, GESTOR, ATENDIMENTO                                      |
+| `GET /veiculos`, `GET /veiculos/:id`                                                                              | + TECNICO                                                       |
+| `POST /ordens-servico` (abre OS e gera as etapas)                                                                 | ADMIN, GESTOR, ATENDIMENTO                                      |
+| `GET /ordens-servico` (`?status&clienteId&placa&numero&atrasada&entradaDe&entradaAte`), `GET /ordens-servico/:id` | internos                                                        |
+| `PATCH /ordens-servico/:id` (observações)                                                                         | ADMIN, GESTOR, ATENDIMENTO                                      |
+| `PATCH /ordens-servico/:id/status` (`SUSPENDER`/`RETOMAR`/`CANCELAR` + justificativa)                             | ADMIN, GESTOR                                                   |
+| `PATCH /ordens-servico/:id/previsao` (replanejamento com justificativa)                                           | ADMIN, GESTOR                                                   |
+| `GET /ordens-servico/:id/etapas`, `/historico`, `/linha-do-tempo`                                                 | internos                                                        |
+| `PATCH /etapas/:id/status` (`INICIAR`, `PAUSAR`, `RETOMAR`, `CONCLUIR`, `DISPENSAR`, `REABRIR`)                   | ADMIN, GESTOR, TECNICO (só as próprias)                         |
+| `PATCH /etapas/:id/responsavel`, `PATCH /etapas/:id/prazo`                                                        | ADMIN, GESTOR                                                   |
+| `POST/GET /ordens-servico/:id/ocorrencias`, `PATCH /ocorrencias/:id`                                              | internos (alterar: gestão ou responsável)                       |
+| `POST /ordens-servico/:id/documentos` (multipart, campo `arquivo`: PDF/PNG/JPEG até 10 MB)                        | internos                                                        |
+| `GET /ordens-servico/:id/documentos`, `GET /documentos/:id/arquivo`                                               | internos                                                        |
+| `PATCH /documentos/:id/status` (aprovar/rejeitar)                                                                 | ADMIN, GESTOR                                                   |
+| `GET/POST /modelos-etapa`, `PATCH /modelos-etapa/:id`                                                             | ADMIN, GESTOR                                                   |
+| `GET /cliente/minhas-ordens`, `GET /cliente/ordens/:id/acompanhar`, `GET /cliente/documentos/:id/arquivo`         | CLIENTE (só as próprias)                                        |
 
 Exemplo rápido:
 

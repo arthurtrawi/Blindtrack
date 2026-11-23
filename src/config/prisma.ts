@@ -13,6 +13,10 @@ function criarPrismaClient(): PrismaClient {
   return new PrismaClient({
     adapter,
     log: env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+    // Padrão do Prisma: 2 s para obter conexão e 5 s por transação interativa.
+    // Abrir uma OS grava OS + etapas + histórico + auditoria numa transação; em máquinas
+    // lentas, 5 s é pouco. Limites maiores, mas ainda finitos (evitam lock eterno).
+    transactionOptions: { maxWait: 10_000, timeout: 20_000 },
   });
 }
 

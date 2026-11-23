@@ -5,7 +5,9 @@
  * Erros inesperados viram 500 sem expor stack trace nem mensagens internas ao cliente.
  */
 import type { NextFunction, Request, Response } from 'express';
+import multer from 'multer';
 import { ZodError } from 'zod';
+import { env } from '../config/env.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { AppError, ConflictError, NotFoundError, ValidationError } from '../utils/app-error.js';
 
@@ -45,6 +47,18 @@ function normalizarErro(erro: unknown): AppError | null {
 
   if (erro instanceof Prisma.PrismaClientKnownRequestError) {
     return traduzirErroPrisma(erro);
+  }
+
+  // Erros do upload (multer): tamanho, quantidade de arquivos, campo inesperado.
+  if (erro instanceof multer.MulterError) {
+    if (erro.code === 'LIMIT_FILE_SIZE') {
+      return new AppError(
+        `Arquivo excede o limite de ${env.UPLOAD_MAX_SIZE_MB} MB`,
+        413,
+        'PAYLOAD_TOO_LARGE',
+      );
+    }
+    return new AppError(`Upload inválido: ${erro.message}`, 400, 'UPLOAD_INVALIDO', { campo: erro.field });
   }
 
   // JSON malformado no corpo da requisição (express.json).

@@ -5,9 +5,14 @@
  * testes que dependem dele se marcam como ignorados.
  */
 import { execSync } from 'node:child_process';
+import { rmSync } from 'node:fs';
+import path from 'node:path';
 import 'dotenv/config';
 
-export default function setup(): void {
+/** Pasta de uploads dos testes (definida em vitest.config.ts). */
+const PASTA_UPLOADS_TESTE = path.resolve('uploads-test');
+
+export default function setup(): () => void {
   const urlTeste = process.env['TEST_DATABASE_URL'];
   if (!urlTeste) {
     throw new Error('TEST_DATABASE_URL não definida no .env');
@@ -25,4 +30,9 @@ export default function setup(): void {
     const saida = erro instanceof Error && 'stderr' in erro ? String(erro.stderr) : String(erro);
     console.warn(`\n⚠ Não foi possível aplicar migrations no banco de testes:\n${saida.slice(0, 500)}`);
   }
+
+  // Teardown: remove os arquivos enviados durante os testes.
+  return () => {
+    rmSync(PASTA_UPLOADS_TESTE, { recursive: true, force: true });
+  };
 }

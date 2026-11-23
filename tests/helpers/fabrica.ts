@@ -102,3 +102,29 @@ export async function abrirOrdem(dados: {
     select: { id: true, numero: true },
   });
 }
+
+/** Mesmo modelo de etapas do seed (só TROCA_VIDROS é dispensável). */
+export const MODELOS_PADRAO = [
+  ['RECEPCAO', 'Recepção', true],
+  ['DESMONTAGEM', 'Desmontagem', true],
+  ['INSTALACAO_MANTA', 'Instalação da manta', true],
+  ['TROCA_VIDROS', 'Troca de vidros', false],
+  ['REMONTAGEM', 'Remontagem', true],
+  ['VISTORIA', 'Vistoria', true],
+  ['INSPECAO_FINAL', 'Inspeção final', true],
+  ['ENTREGA', 'Entrega', true],
+] as const;
+
+export async function criarModelosPadrao(): Promise<void> {
+  await prisma.modeloEtapa.createMany({
+    data: MODELOS_PADRAO.map(([codigo, nome, obrigatoria], i) => ({
+      codigo,
+      nome,
+      obrigatoria,
+      ordem: (i + 1) * 10,
+    })),
+  });
+}
+
+/** PDF mínimo válido (assinatura %PDF-) para testes de upload. */
+export const PDF_TESTE = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');

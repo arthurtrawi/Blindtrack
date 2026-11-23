@@ -96,3 +96,14 @@ export const textoSchema = (min: number, max: number, campo: string) =>
     .trim()
     .min(min, `${campo} deve ter pelo menos ${min} caracteres`)
     .max(max, `${campo} deve ter no máximo ${max} caracteres`);
+
+/**
+ * Data e hora ISO 8601 com fuso (ex.: 2026-12-01T18:00:00-03:00 ou ...Z).
+ * Exigir o fuso evita ambiguidade: o banco grava em UTC (timestamptz).
+ */
+export const dataHoraSchema = z.iso
+  .datetime({ offset: true, message: 'Use data/hora ISO 8601 com fuso, ex.: 2026-12-01T18:00:00-03:00' })
+  .transform((valor) => new Date(valor));
+
+/** Justificativa textual obrigatória (replanejamentos, pausas, cancelamentos...). */
+export const justificativaSchema = textoSchema(5, 1000, 'Justificativa');

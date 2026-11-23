@@ -13,6 +13,7 @@ src/generated/
 
 # Arquivos enviados pelos usuários (podem conter dados pessoais — LGPD)
 uploads/
+uploads-test/
 
 # Logs e temporários
 *.log

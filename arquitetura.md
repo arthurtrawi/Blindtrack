@@ -1,6 +1,6 @@
 # Arquitetura — BlindTrack
 
-> Status: **Fase 4a concluída** (auth, usuários, clientes, veículos). Detalhes do banco em [docs/modelagem/modelo-de-dados.md](docs/modelagem/modelo-de-dados.md). Este documento será revisado na Fase 6.
+> Status: **Fase 4 concluída** (API completa). Detalhes do banco em [docs/modelagem/modelo-de-dados.md](docs/modelagem/modelo-de-dados.md). Este documento será revisado na Fase 6.
 
 ## 1. Visão geral
 
@@ -177,6 +177,10 @@ sequenceDiagram
 | ADR-16 | Projeção por perfil nos services: o TECNICO recebe cliente com documento mascarado e sem contato/endereço.                                                       | Mesmo payload para todos.                       | Minimização (LGPD): o técnico não precisa desses dados para executar a blindagem.                                                                                                                           |
 | ADR-17 | Validação no middleware `validate`, que substitui `req.body/params/query` pelos valores normalizados. Os schemas são `strict`.                                   | Validar dentro de cada controller.              | Um ponto único de validação. Campos extras são rejeitados (proteção contra mass assignment).                                                                                                                |
 | ADR-18 | CNPJ alfanumérico aceito (validador + CHECK ajustado na migration `cnpj_alfanumerico`).                                                                          | Só CNPJ numérico.                               | Exigência legal vigente desde julho/2026. Sem isso, empresas novas não poderiam ser cadastradas.                                                                                                            |
+| ADR-19 | Linha do tempo do portal com **mensagens padronizadas**, geradas a partir de tipo e status do evento.                                                            | Exibir a `descricao` do histórico.              | A descrição interna pode conter justificativas e nomes. O cliente vê só textos pensados para ele (`descricaoCliente` nas ocorrências).                                                                      |
+| ADR-20 | Máquinas de estado e prazos como **funções puras** em `services/domain`.                                                                                         | Regras espalhadas nos services.                 | Testáveis sem banco (61 testes unitários) e reaproveitadas por vários services.                                                                                                                             |
+| ADR-21 | Upload em memória, com o tipo validado pela **assinatura binária** antes de gravar em disco, nome gerado (UUID) e hash SHA-256.                                  | Confiar na extensão ou no MIME declarado.       | Impede arquivo disfarçado (ex.: HTML com extensão .pdf) e path traversal. O hash permite verificar a integridade.                                                                                           |
+| ADR-22 | Transações interativas do Prisma com `maxWait` 10 s / `timeout` 20 s.                                                                                            | Padrão do Prisma (2 s / 5 s).                   | Abrir uma OS grava OS + 8 etapas + histórico + auditoria. Em máquinas lentas, 5 s não bastava. Os limites continuam finitos.                                                                                |
 
 ## 7. Matriz de permissões (resumo)
 
@@ -234,6 +238,7 @@ sequenceDiagram
 | GET/POST/PATCH   | `/modelos-etapa`                     | _(extra)_ configuração das etapas                                                |
 | GET              | `/cliente/minhas-ordens`             | Portal                                                                           |
 | GET              | `/cliente/ordens/:id/acompanhar`     | Portal                                                                           |
+| GET              | `/cliente/documentos/:id/arquivo`    | _(extra)_ portal: download de documento visível da própria OS                    |
 | GET              | `/docs`                              | Swagger UI                                                                       |
 | GET              | `/health`                            | Checa API + banco                                                                |
 
