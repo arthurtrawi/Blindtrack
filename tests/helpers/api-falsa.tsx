@@ -10,6 +10,22 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import type { PerfilUsuario, UsuarioAutenticado } from '@/types/usuario';
 
+/*
+ * As telas são carregadas sob demanda (lazy) no app. Nos testes, importá-las aqui faz o custo
+ * de carregar o módulo acontecer ao abrir o arquivo de teste, e não dentro do tempo-limite de
+ * cada findBy — em máquinas lentas isso evitava falsas falhas. O lazy() reaproveita o cache.
+ */
+import '@/components/layout/AdminLayout';
+import '@/pages/admin/ClientesPage';
+import '@/pages/admin/DashboardPage';
+import '@/pages/admin/ModelosEtapaPage';
+import '@/pages/admin/OrdemDetalhePage';
+import '@/pages/admin/OrdensPage';
+import '@/pages/admin/UsuariosPage';
+import '@/pages/admin/VeiculosPage';
+import '@/pages/cliente/PortalDashboardPage';
+import '@/pages/sistema/StatusConexaoPage';
+
 export function json(corpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(corpo), { status, headers: { 'Content-Type': 'application/json' } });
 }

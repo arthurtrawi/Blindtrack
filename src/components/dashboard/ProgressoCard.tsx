@@ -44,21 +44,21 @@ export function ProgressoCard({ ordem }: { ordem: OrdemPortalDetalhe }) {
         </div>
 
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
-          <div className="flex items-start gap-2">
-            <CalendarCheck className="mt-0.5 size-4 text-slate-500" aria-hidden="true" />
-            <div>
-              <dt className="text-slate-600">{entregue ? 'Entregue em' : 'Previsão de entrega'}</dt>
-              <dd className="font-medium tabular-nums">
-                {formatarData(entregue ? ordem.dataEntrega : ordem.previsaoEntrega)}
-              </dd>
-            </div>
+          <div>
+            <dt className="flex items-center gap-2 text-slate-600">
+              <CalendarCheck className="size-4 text-slate-500" aria-hidden="true" />
+              {entregue ? 'Entregue em' : 'Previsão de entrega'}
+            </dt>
+            <dd className="pl-6 font-medium tabular-nums">
+              {formatarData(entregue ? ordem.dataEntrega : ordem.previsaoEntrega)}
+            </dd>
           </div>
-          <div className="flex items-start gap-2">
-            <Clock className="mt-0.5 size-4 text-slate-500" aria-hidden="true" />
-            <div>
-              <dt className="text-slate-600">Última atualização</dt>
-              <dd className="font-medium tabular-nums">{formatarDataHora(ultimaAtualizacao)}</dd>
-            </div>
+          <div>
+            <dt className="flex items-center gap-2 text-slate-600">
+              <Clock className="size-4 text-slate-500" aria-hidden="true" />
+              Última atualização
+            </dt>
+            <dd className="pl-6 font-medium tabular-nums">{formatarDataHora(ultimaAtualizacao)}</dd>
           </div>
         </dl>
 

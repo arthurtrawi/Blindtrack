@@ -1,9 +1,11 @@
 import { ShieldX } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTituloPagina } from '@/hooks/useTituloPagina';
 import { rotaInicial } from '@/utils/permissoes';
 
 export function AcessoNegadoPage() {
+  useTituloPagina('Acesso negado');
   const { usuario } = useAuth();
   const inicio = usuario ? rotaInicial(usuario.perfil) : '/login';
 

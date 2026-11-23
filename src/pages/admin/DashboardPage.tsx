@@ -22,7 +22,7 @@ import { useApi } from '@/hooks/useApi';
 import { indicadores as carregarIndicadores } from '@/services/dashboard.service';
 import { listar as listarOrdens } from '@/services/ordemServico.service';
 import type { StatusOrdemServico } from '@/types/ordemServico';
-import { formatarData, formatarDataHora } from '@/utils/formatacao';
+import { formatarData, formatarDataHora, plural } from '@/utils/formatacao';
 import { STATUS_OS } from '@/utils/status';
 
 interface IndicadorProps {
@@ -218,7 +218,8 @@ export function DashboardPage() {
                           <div className="flex items-center gap-2 text-xs">
                             <StatusOsBadge status={ordem.status} />
                             <span className="font-medium text-red-800">
-                              {ordem.prazo.diasAtraso} dia(s) · prev. {formatarData(ordem.previsaoEntrega)}
+                              {plural(ordem.prazo.diasAtraso, 'dia')} · prev.{' '}
+                              {formatarData(ordem.previsaoEntrega)}
                             </span>
                           </div>
                         </Link>

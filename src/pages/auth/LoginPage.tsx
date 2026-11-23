@@ -13,6 +13,7 @@ import { TelaCarregando } from '@/components/layout/TelaCarregando';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
+import { useTituloPagina } from '@/hooks/useTituloPagina';
 import type { EstadoNavegacaoLogin } from '@/routes/ProtectedRoute';
 import { ApiError } from '@/services/api';
 import { caminhoPermitido, rotaInicial } from '@/utils/permissoes';
@@ -36,6 +37,7 @@ function mensagemDeErro(erro: unknown): string {
 }
 
 export function LoginPage() {
+  useTituloPagina('Entrar');
   const { status, usuario, motivoSaida, entrar } = useAuth();
   const navegar = useNavigate();
   const local = useLocation();

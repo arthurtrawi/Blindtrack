@@ -4,11 +4,11 @@ Interface web do sistema **Blindada-veiculo** (gestão e rastreabilidade de blin
 automotiva): **portal do cliente** e **painel administrativo**. Aplicação SPA independente,
 que consome a API REST do backend (`~/Blindada-veiculo`).
 
-**Status:** Fase 5 concluída. O **portal do cliente** (Fase 4) mostra a linha do tempo da
+**Status:** Fase 6 (qualidade) concluída — ver [Qualidade](#qualidade-fase-6). O **portal do cliente** (Fase 4) mostra a linha do tempo da
 blindagem, ocorrências, documentos e atualizações. O **painel administrativo** (Fase 5) traz
 dashboard de indicadores, ordens de serviço (filtros na URL, ordenação, detalhe com etapas,
 ocorrências, documentos e histórico), clientes, veículos, usuários e modelos de etapa, com
-ações filtradas por perfil (ADMIN, GESTOR, TECNICO, ATENDIMENTO). Próxima: Fase 6 (qualidade).
+ações filtradas por perfil (ADMIN, GESTOR, TECNICO, ATENDIMENTO).
 Planejamento em [docs/fase-1-planejamento.md](docs/fase-1-planejamento.md).
 
 ## Como testar o login
@@ -102,3 +102,25 @@ tests/                  Vitest + Testing Library
 | `npm run preview`                                           | Serve o build de produção                      |
 | `npm test` / `npm run test:watch` / `npm run test:coverage` | Testes                                         |
 | `npm run typecheck` / `npm run lint` / `npm run format`     | Qualidade                                      |
+
+## Qualidade (Fase 6)
+
+- **Testes** (Vitest + Testing Library): login, logout, sessão expirada, rotas protegidas por
+  perfil, timeline, carregamento, falha de API com "Tentar novamente", filtros, formulários,
+  ações de status e permissões. Em `tests/qualidade/`, o **axe-core** verifica as regras WCAG
+  2.1 A/AA nas telas principais (login, portal, dashboard, ordens, detalhe, modal, 404).
+- **Acessibilidade:** título da aba por tela; ao trocar de tela, o foco vai para o conteúdo;
+  link "Pular para o conteúdo"; modais com foco preso e Esc; status sempre com texto e ícone;
+  avisos em região `aria-live`; `prefers-reduced-motion` respeitado.
+- **Erros:** falhas de API mostram mensagem e "Tentar novamente"; um erro inesperado de
+  renderização mostra uma tela de recuperação (nunca tela em branco), e o menu do painel continua
+  utilizável.
+- **Desempenho:** cada tela é baixada sob demanda (o cliente não baixa o código do painel);
+  `date-fns` importado por função, sem o pacote inteiro de idiomas.
+- **Validação no navegador real** (Chromium), nos 4 tamanhos de referência — 360×800, 768×1024,
+  1366×768 e 1920×1080: sem rolagem horizontal, axe sem violações (inclusive contraste) e
+  login/navegação só pelo teclado.
+
+Em máquinas lentas, a suíte usa limites de tempo maiores (`testTimeout` e `asyncUtilTimeout`);
+em VMs sobrecarregadas, rode `npx vitest run --maxWorkers=1` (nesta VM: 119 testes em ~30 s;
+com mais workers, a disputa de CPU gera falsos estouros de tempo).

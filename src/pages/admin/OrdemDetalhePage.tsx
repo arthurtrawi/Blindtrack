@@ -25,7 +25,7 @@ import { usePermissao } from '@/hooks/usePermissao';
 import { useToast } from '@/hooks/useToast';
 import * as ordemService from '@/services/ordemServico.service';
 import type { AcaoOrdem, OrdemServicoDetalhe } from '@/types/ordemServico';
-import { dataParaIso, formatarData, formatarPlaca, hojeLocal, isoParaData } from '@/utils/formatacao';
+import { dataParaIso, formatarData, formatarPlaca, hojeLocal, isoParaData, plural } from '@/utils/formatacao';
 import { calcularProgresso } from '@/utils/progresso';
 
 type AbaOrdem = 'etapas' | 'ocorrencias' | 'documentos' | 'historico';
@@ -197,7 +197,7 @@ function DetalheOrdem({ ordem, voltar, versao, aoAlterar }: DetalheOrdemProps) {
             {ordem.prazo.desvioDias !== null && (
               <>
                 <dt className="text-slate-600">Desvio</dt>
-                <dd className="tabular-nums">{ordem.prazo.desvioDias} dia(s)</dd>
+                <dd className="tabular-nums">{plural(ordem.prazo.desvioDias, 'dia')}</dd>
               </>
             )}
           </dl>
@@ -233,7 +233,13 @@ function DetalheOrdem({ ordem, voltar, versao, aoAlterar }: DetalheOrdemProps) {
           aoMudar={setAba}
           abas={[
             { chave: 'etapas', rotulo: 'Etapas' },
-            { chave: 'ocorrencias', rotulo: `Ocorrências (${ordem.ocorrenciasAbertas} abertas)` },
+            {
+              chave: 'ocorrencias',
+              rotulo:
+                ordem.ocorrenciasAbertas > 0
+                  ? `Ocorrências (${ordem.ocorrenciasAbertas} ${ordem.ocorrenciasAbertas === 1 ? 'aberta' : 'abertas'})`
+                  : 'Ocorrências',
+            },
             { chave: 'documentos', rotulo: `Documentos (${ordem.totalDocumentos})` },
             { chave: 'historico', rotulo: 'Histórico' },
           ]}

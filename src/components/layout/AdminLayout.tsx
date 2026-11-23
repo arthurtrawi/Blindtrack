@@ -15,8 +15,10 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { LimiteDeErro } from '@/components/erros/LimiteDeErro';
+import { Carregando } from '@/components/ui/EstadoCarregamento';
 import { useAuth } from '@/hooks/useAuth';
 import type { PerfilUsuario } from '@/types/usuario';
 import { PERFIS_MENU, ROTULO_PERFIL } from '@/utils/permissoes';
@@ -95,6 +97,16 @@ export function AdminLayout() {
   const [saindo, setSaindo] = useState(false);
   const gaveta = useRef<HTMLDivElement>(null);
   const botaoMenu = useRef<HTMLButtonElement>(null);
+  const conteudo = useRef<HTMLElement>(null);
+  const caminhoAnterior = useRef(local.pathname);
+
+  // Ao trocar de tela, o foco vai para o conteúdo (como numa página nova): o leitor de tela
+  // anuncia a nova tela e o Tab recomeça dali. Não roda na primeira carga nem ao mudar filtros.
+  useEffect(() => {
+    if (caminhoAnterior.current === local.pathname) return;
+    caminhoAnterior.current = local.pathname;
+    conteudo.current?.focus();
+  }, [local.pathname]);
 
   // Gaveta: Esc fecha, foco vai para dentro ao abrir e volta ao botão ao fechar.
   useEffect(() => {
@@ -195,19 +207,24 @@ export function AdminLayout() {
           <Menu className="size-5" aria-hidden="true" />
         </button>
         <span className="lg:hidden" />
-        <div className="text-right text-sm leading-tight">
+        <div className="ml-auto text-right text-sm leading-tight">
           <p className="font-medium text-slate-900">{usuario.nome}</p>
           <p className="text-xs text-slate-600">{ROTULO_PERFIL[usuario.perfil]}</p>
         </div>
       </header>
 
       <main
+        ref={conteudo}
         id="conteudo"
         tabIndex={-1}
         key={local.pathname}
-        className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6"
+        className="mx-auto max-w-7xl space-y-6 px-4 py-6 outline-none md:px-6"
       >
-        <Outlet />
+        <LimiteDeErro chaveReinicio={local.pathname}>
+          <Suspense fallback={<Carregando texto="Carregando a tela..." />}>
+            <Outlet />
+          </Suspense>
+        </LimiteDeErro>
       </main>
     </div>
   );

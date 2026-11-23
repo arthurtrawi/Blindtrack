@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTituloPagina } from '@/hooks/useTituloPagina';
 
 interface PageHeaderProps {
   titulo: string;
@@ -9,6 +10,7 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ titulo, descricao, acoes, voltar }: PageHeaderProps) {
+  useTituloPagina(titulo);
   return (
     <div className="space-y-2">
       {voltar}

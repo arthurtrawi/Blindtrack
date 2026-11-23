@@ -78,6 +78,15 @@ function EtapaAtual({ ordem }: { ordem: OrdemServicoResumo }) {
   );
 }
 
+const OPCOES_ORDENACAO: readonly (readonly [string, string])[] = [
+  ['dataEntrada:desc', 'Entrada (mais recentes)'],
+  ['dataEntrada:asc', 'Entrada (mais antigas)'],
+  ['previsaoEntrega:asc', 'Previsão de entrega (mais próxima)'],
+  ['previsaoEntrega:desc', 'Previsão de entrega (mais distante)'],
+  ['numero:desc', 'Número (maior primeiro)'],
+  ['numero:asc', 'Número (menor primeiro)'],
+];
+
 export function OrdensPage() {
   const podeFazer = usePermissao();
   const navegar = useNavigate();
@@ -213,8 +222,8 @@ export function OrdensPage() {
         )}
         {dados && dados.data.length > 0 && (
           <div aria-busy={estado.status === 'carregando'} className="space-y-4">
-            {/* Desktop/tablet: tabela */}
-            <div className="hidden overflow-x-auto md:block">
+            {/* A partir de 1280 px: tabela (7 colunas não cabem ao lado do menu em telas menores) */}
+            <div className="relative hidden overflow-x-auto xl:block">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 text-xs text-slate-600 uppercase">
                   <tr>
@@ -301,8 +310,24 @@ export function OrdensPage() {
               </table>
             </div>
 
-            {/* Mobile: cards */}
-            <ul className="space-y-3 md:hidden">
+            {/* Celular, tablet e notebook pequeno: cartões (a ordenação vem num seletor) */}
+            <div className="max-w-xs xl:hidden">
+              <Select
+                rotulo="Ordenar por"
+                value={`${ordenarPor}:${direcao}`}
+                onChange={(e) => {
+                  const [campo, sentido] = e.target.value.split(':') as [OrdenarOrdensPor, 'asc' | 'desc'];
+                  alterar({ ordenarPor: campo, direcao: sentido });
+                }}
+              >
+                {OPCOES_ORDENACAO.map(([valor, rotulo]) => (
+                  <option key={valor} value={valor}>
+                    {rotulo}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <ul className="space-y-3 xl:hidden">
               {dados.data.map((ordem) => (
                 <li key={ordem.id}>
                   <Link

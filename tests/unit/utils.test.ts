@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { dataVencida, formatarData, formatarPlaca, mascararPlaca, primeiroNome } from '@/utils/formatacao';
+import {
+  dataVencida,
+  formatarData,
+  formatarPlaca,
+  mascararPlaca,
+  plural,
+  primeiroNome,
+} from '@/utils/formatacao';
 import { caminhoPermitido, rotaInicial } from '@/utils/permissoes';
 import { calcularProgresso, indiceEtapaAtual } from '@/utils/progresso';
 import { tomOcorrenciaPortal } from '@/utils/status';
@@ -78,5 +85,13 @@ describe('situação de ocorrência no portal', () => {
     expect(tomOcorrenciaPortal('Resolvida')).toBe('success');
     expect(tomOcorrenciaPortal('Em análise')).toBe('warning');
     expect(tomOcorrenciaPortal('Em tratamento')).toBe('info');
+  });
+});
+
+describe('plural', () => {
+  it('concorda o substantivo com a quantidade', () => {
+    expect(plural(1, 'dia')).toBe('1 dia');
+    expect(plural(2, 'dia')).toBe('2 dias');
+    expect(plural(0, 'registro')).toBe('0 registros');
   });
 });

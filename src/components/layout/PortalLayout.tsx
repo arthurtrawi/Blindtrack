@@ -12,7 +12,11 @@ export function PortalLayout({ children }: { children: ReactNode }) {
         Pular para o conteúdo
       </a>
       <CabecalhoSessao subtitulo="Portal do cliente" />
-      <main id="conteudo" tabIndex={-1} className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:py-8">
+      <main
+        id="conteudo"
+        tabIndex={-1}
+        className="mx-auto max-w-6xl space-y-6 px-4 py-6 outline-none md:py-8"
+      >
         {children}
       </main>
     </div>

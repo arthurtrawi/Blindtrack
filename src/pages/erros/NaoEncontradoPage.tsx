@@ -1,7 +1,9 @@
 import { Compass } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTituloPagina } from '@/hooks/useTituloPagina';
 
 export function NaoEncontradoPage() {
+  useTituloPagina('Página não encontrada');
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 p-4 text-center">
       <Compass className="size-10 text-slate-400" aria-hidden="true" />

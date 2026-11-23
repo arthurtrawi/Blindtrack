@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/Card';
 import { Carregando, ErroCarregamento, Vazio } from '@/components/ui/EstadoCarregamento';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
+import { useTituloPagina } from '@/hooks/useTituloPagina';
 import { acompanhar, minhasOrdens } from '@/services/portal.service';
 import type { OrdemPortalDetalhe } from '@/types/portal';
 import { formatarData, formatarPlaca, mascararPlaca, primeiroNome } from '@/utils/formatacao';
@@ -26,6 +27,7 @@ import { formatarData, formatarPlaca, mascararPlaca, primeiroNome } from '@/util
 const LIMITE_ORDENS = 100;
 
 export function PortalDashboardPage() {
+  useTituloPagina('Acompanhamento da blindagem');
   const { usuario } = useAuth();
   const { id: idDaUrl } = useParams();
   const ordens = useApi((signal) => minhasOrdens({ pageSize: LIMITE_ORDENS }, signal), []);

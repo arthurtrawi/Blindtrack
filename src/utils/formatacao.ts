@@ -1,6 +1,8 @@
 /** Formatação de datas (pt-BR, fuso do navegador) e de dados exibidos ao usuário. */
-import { format, isValid, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { isValid } from 'date-fns/isValid';
+import { parseISO } from 'date-fns/parseISO';
+import { ptBR } from 'date-fns/locale/pt-BR';
 
 function comoData(valor: string | Date | null | undefined): Date | null {
   if (!valor) return null;
@@ -67,4 +69,9 @@ export function isoParaData(iso: string | null | undefined): string {
 /** Data de hoje (aaaa-mm-dd), útil como `min` de inputs de previsão. */
 export function hojeLocal(): string {
   return format(new Date(), 'yyyy-MM-dd');
+}
+
+/** "1 dia", "2 dias", "0 registros". */
+export function plural(quantidade: number, singular: string, pluralTexto = `${singular}s`): string {
+  return `${quantidade} ${Math.abs(quantidade) === 1 ? singular : pluralTexto}`;
 }

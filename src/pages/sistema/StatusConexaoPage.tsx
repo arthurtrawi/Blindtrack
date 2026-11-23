@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Carregando, ErroCarregamento } from '@/components/ui/EstadoCarregamento';
 import { useApi } from '@/hooks/useApi';
+import { useTituloPagina } from '@/hooks/useTituloPagina';
 import { saude } from '@/services/dashboard.service';
 
 export function StatusConexaoPage() {
+  useTituloPagina('Status da conexão');
   const { estado, recarregar } = useApi((signal) => saude(signal), []);
 
   return (

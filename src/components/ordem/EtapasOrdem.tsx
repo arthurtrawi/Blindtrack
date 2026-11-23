@@ -241,7 +241,7 @@ export function EtapasOrdem({ ordem, aoAlterar }: EtapasOrdemProps) {
                       setResponsavelId(etapa.responsavelId ?? '');
                       setDialogo({ tipo: 'responsavel', etapa });
                     }}
-                    aria-label={`Definir responsável de ${etapa.nome}`}
+                    aria-label={`Responsável de ${etapa.nome}`}
                   >
                     <UserRound className="size-4" aria-hidden="true" /> Responsável
                   </Button>
@@ -254,7 +254,7 @@ export function EtapasOrdem({ ordem, aoAlterar }: EtapasOrdemProps) {
                       setNovaPrevisao(isoParaData(etapa.previsaoConclusao));
                       setDialogo({ tipo: 'prazo', etapa });
                     }}
-                    aria-label={`Alterar previsão de ${etapa.nome}`}
+                    aria-label={`Prazo de ${etapa.nome}`}
                   >
                     <CalendarClock className="size-4" aria-hidden="true" /> Prazo
                   </Button>

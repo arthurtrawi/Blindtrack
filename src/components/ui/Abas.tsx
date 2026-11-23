@@ -43,7 +43,7 @@ export function Abas<C extends string>({ abas, ativa, aoMudar, rotulo, children 
       <div
         role="tablist"
         aria-label={rotulo}
-        className="flex gap-1 overflow-x-auto border-b border-slate-200"
+        className="relative flex gap-1 overflow-x-auto border-b border-slate-200"
       >
         {abas.map((aba, indice) => {
           const selecionada = aba.chave === ativa;

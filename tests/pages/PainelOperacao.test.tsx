@@ -100,7 +100,7 @@ describe('Dashboard', () => {
     expect(atrasadas).toHaveAttribute('href', '/painel/ordens?atrasada=true');
     expect(screen.getByText('Ocorrências ativas').closest('div')?.parentElement).toHaveTextContent('4');
     expect(screen.getByRole('table', { name: /por status/i })).toHaveTextContent('Entregue');
-    expect(await screen.findByText(/4 dia\(s\)/)).toBeInTheDocument();
+    expect(await screen.findByText(/4 dias · prev\./)).toBeInTheDocument();
   });
 
   it('erro de rede mostra mensagem e "Tentar novamente"', async () => {
@@ -270,9 +270,7 @@ describe('Detalhe da OS — etapas', () => {
     renderizarApp('/painel/ordens/os-1');
     const usuario = userEvent.setup();
 
-    await usuario.click(
-      await screen.findByRole('button', { name: 'Definir responsável de Instalação da manta' }),
-    );
+    await usuario.click(await screen.findByRole('button', { name: 'Responsável de Instalação da manta' }));
     const dialogo = screen.getByRole('dialog');
     await waitFor(() => expect(within(dialogo).getAllByRole('option')).toHaveLength(3));
     await usuario.selectOptions(within(dialogo).getByLabelText('Responsável técnico'), 'id-tecnico');
